@@ -38,6 +38,26 @@ uv run uvicorn need2know.api:app --host 127.0.0.1 --port 8000 --reload --reload-
 
 Open `http://127.0.0.1:8000` to see the agent-session wall.
 
+## Run a command-line demo
+
+The terminal demo asks the same local memory switch used by MCP clients, then
+prints the agent’s fixed role, the request, the minimum released detail (if
+any), and the audit record number:
+
+```bash
+uv run need2know demo --agent muse-travel "Find a good restaurant for my trip to Lisbon."
+```
+
+Use `--offline` for a free, fully local rehearsal of the flow. It uses the
+prototype’s local overlap judge instead of making a Jev HTTP call:
+
+```bash
+uv run need2know demo --offline
+```
+
+Use `need2know ask AGENT_ID "REQUEST"` when you need the raw JSON tool-shaped
+response instead.
+
 ## Claude Code MCP connection
 
 The project includes a Claude Code MCP configuration named `need2know-claude`. It runs the local FastMCP service under the fixed `claude-health` identity:
@@ -56,6 +76,23 @@ muse --trust-workspace
 `MUSE_API_KEY` authenticates Muse Code's model provider; it is not passed to Need to Know. Need to Know loads only its own local Jev key from `.env`. The dashboard’s review actions are also cleared by `need2know seed --reset`, along with the facts they may have created.
 
 The server exposes `identity`, `recall`, and `propose_memory`.
+
+## Codex MCP connection
+
+Codex has a separate local stdio entry named `need2know-codex`, fixed to the
+`codex-code` role. From this project directory, confirm the installed
+connection and start a new Codex session:
+
+```bash
+codex mcp get need2know-codex
+codex
+```
+
+The connection runs `uv --directory . run need2know-mcp` with
+`N2K_AGENT_ID=codex-code`. Keep it as a Codex-specific configuration: a client
+must never select a more privileged role by changing tool input. Codex supports
+local stdio MCP servers through its MCP configuration; see the [official Codex
+MCP documentation](https://developers.openai.com/docs/extend/mcp).
 
 - `recall` receives a narrowly scoped task, applies the role-aware access decision, and writes the audit record to the same local SQLite file.
 - `propose_memory` stages a direct user statement or cited user-provided record for review. It requires a full fact, a safe alternative, category, source, and confidence. It cannot write to `facts` or `fact_vectors`; a proposal remains unretrievable until a human accepts it.
