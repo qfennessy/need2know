@@ -75,6 +75,16 @@ TERMINAL_HTML = """<!doctype html>
     <article><strong>92.9%</strong><b>Precision</b><span>Of everything shared, how much was allowed?</span></article>
     <article><strong>59.1%</strong><b>Recall</b><span>Of everything needed, how much was shared correctly?</span></article>
   </div>
+  <div class="baseline-table"><table>
+    <caption>Same scoped-v2 benchmark · normal retrieval only</caption>
+    <thead><tr><th>Metric</th><th>Revised baseline</th><th>Original + softer search</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><th>F1</th><td>72.2%</td><td>77.8%</td><td>+5.6 points</td></tr>
+      <tr><th>Precision</th><td>92.9%</td><td>100.0% · 14/14</td><td>+7.1 points</td></tr>
+      <tr><th>Recall</th><td>59.1%</td><td>63.6% · 14/22</td><td>+4.5 points</td></tr>
+    </tbody>
+  </table></div>
+  <p>Softer-search experiment: 104 live Jev requests, one repeat. Unauthorized releases: 1 → 0; needed facts withheld: 8 → 6; search misses: 1 → 2. No API errors. A better score in this run, not proof of stable improvement; search coverage worsened. Recorded run: need2know-eval-pxar6ljs.</p>
   <p>Baseline set September 20, 2026 · scoped-v2 · one live Jev run. Future comparisons use these same benchmark expectations. Not a safety guarantee or a live measurement.</p>
 </section>
 <style>
@@ -228,12 +238,12 @@ ADVERSARIAL_FLOW_DIAGRAM = """
     <ol style="padding-left:28px;display:grid;gap:16px">
       <li><b>Represent each fact as numbers.</b> A local embedding model converts the original fact, category, and keywords into a 256-number vector. Similar meanings should produce nearby vectors.</li>
       <li><b>Represent the question the same way.</b> The same local model turns the request into a comparable vector.</li>
-      <li><b>Find nearby facts.</b> For the usual eight-fact limit, sqlite-vec first retrieves up to 16 candidates.</li>
+      <li><b>Find nearby facts in both versions.</b> For the usual eight-fact limit, sqlite-vec retrieves up to 16 original-text candidates. A separate local vector search selects up to 16 softer statements. Merge duplicates, keeping each fact’s strongest similarity.</li>
       <li><b>Boost keyword matches.</b> Each matching stored keyword adds 0.15 to the ranking score. This reorders the shortlist; it cannot bring back a fact outside it.</li>
       <li><b>Send the top eight to Jev.</b> Jev evaluates disclosure using the role and request. Selecting a fact is not permission to share it with the assistant.</li>
     </ol>
     <p><b>Two evaluation modes:</b> Normal retrieval uses this shortlist. All-facts skips search and sends all 15 fictional benchmark facts to Jev, helping distinguish search misses from judgment failures.</p>
-    <p>The softer statement is not currently embedded. Search uses the question, not the agent’s role. These steps describe the installed local model and sqlite-vec path.</p>
+    <p>Softer statements are embedded locally and cached in memory. This prototype scans their vectors; original vectors use sqlite-vec. Search uses the question, not the agent’s role. The final limit remains eight facts.</p>
   </section>
   <div class="outcomes">
     <article class="outcome release"><div><span class="flow-kicker">IF JUSTIFIED</span><b>Release the minimum useful detail</b><p>Exact fact only when necessary; otherwise a safer task-specific version.</p></div><span class="outcome-arrow" aria-hidden="true">→</span><strong>Agent response</strong></article>
