@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+data/*.db
+data/*.db-*
+models/
+web/node_modules/
+web/.next/

@@ -1,0 +1,71 @@
+# Need to Know
+
+Need to Know is one private door in front of the facts AI assistants learn about a person. Each assistant has one user-written purpose, such as “writes code in my projects” or “helps me with my health.” For every request, Need to Know retrieves a small set of relevant facts, asks Jev whether the fact is needed and reasonably expected for that role, and releases the exact fact, a safer version, or nothing.
+
+This is a fast local prototype for [Sundai Hack 141: Agent Memory Frontier](https://www.sundai.club/events/boston/sundai-hack-141-agent-memory-frontier).
+
+## Where facts live
+
+Everything is stored on the user's machine in one SQLite database. By default that file is:
+
+```text
+./data/need2know.db
+```
+
+Set `N2K_DB_PATH` to put it somewhere else. The database is intentionally ignored by Git; it is the user's private data, not an application artifact.
+
+| Table | What it contains |
+| --- | --- |
+| `facts` | Canonical fact text, a safer alternative, category, sensitivity, keywords, and a local embedding blob. |
+| `fact_vectors` | sqlite-vec's local vector index used to narrow each request to a few candidate facts. |
+| `agents` | Registered agent names and their fixed user-written roles. |
+| `queries` | Every request made through the door. |
+| `decisions` | One audit record for every fact considered: probabilities, disclosure choice, released text, and review state. |
+| `memory_proposals` | Agent-submitted candidate facts awaiting human review. These are not searchable or retrievable memories. |
+
+There is no separate cloud memory store. When `N2K_JUDGE_MODE=jev`, only the candidate facts, the agent role, and the active request are sent to Jev for the access decision; an unavailable or malformed Jev response releases nothing.
+
+## Run the prototype
+
+Use Homebrew Python 3.13, which can load the sqlite-vec extension:
+
+```bash
+uv venv --clear --python /opt/homebrew/opt/python@3.13/bin/python3.13
+uv sync
+uv run need2know seed --reset
+uv run uvicorn need2know.api:app --host 127.0.0.1 --port 8000 --reload --reload-dir need2know
+```
+
+Open `http://127.0.0.1:8000` to see the agent-session wall.
+
+## Claude Code MCP connection
+
+The project includes a Claude Code MCP configuration named `need2know-claude`. It runs the local FastMCP service under the fixed `claude-health` identity:
+
+```bash
+claude mcp get need2know-claude
+claude
+```
+
+The server exposes `identity`, `recall`, and `propose_memory`.
+
+- `recall` receives a narrowly scoped task, applies the role-aware access decision, and writes the audit record to the same local SQLite file.
+- `propose_memory` stages a direct user statement or cited user-provided record for review. It requires a full fact, a safe alternative, category, source, and confidence. It cannot write to `facts` or `fact_vectors`; a proposal remains unretrievable until a human accepts it.
+
+Example proposal:
+
+```json
+{
+  "fact": "Alex prefers aisle seats near the front.",
+  "soft_fact": "Choose an aisle seat near the front.",
+  "suggested_category": "travel",
+  "source": "user_statement",
+  "confidence": 1.0
+}
+```
+
+Allowed sources are `user_statement` and `user_provided_record`. The MCP server rejects inferences, empty fields, oversized fields, and confidence values outside 0–1.
+
+## Configuration
+
+Copy `.env.example` to `.env` and set `TYPESAFE_API_KEY`. `N2K_JUDGE_MODE=jev` uses TypeSafe Jev over HTTP with a two-second timeout. Keep `.env` local; it must never be committed.

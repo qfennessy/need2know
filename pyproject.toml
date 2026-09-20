@@ -1,0 +1,23 @@
+[project]
+name = "need2know"
+version = "0.1.0"
+description = "A local, purpose-bound memory door for AI assistants"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "fastmcp>=2.12",
+  "httpx>=0.27",
+  "model2vec>=0.6",
+  "numpy>=2.0",
+  "python-dotenv>=1.0",
+  "sqlite-vec>=0.1.6",
+  "uvicorn>=0.30",
+]
+
+[project.scripts]
+need2know = "need2know.cli:main"
+need2know-mcp = "need2know.mcp_server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
