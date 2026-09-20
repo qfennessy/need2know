@@ -1,5 +1,9 @@
 # Need to Know
 
+<p align="center">
+  <img src="assets/need-to-know-logo.png" width="220" alt="Need to Know: a private memory door formed by two speech bubbles and a keyhole">
+</p>
+
 Need to Know is one private door in front of the facts AI assistants learn about a person. Each assistant has one user-written purpose, such as “writes code in my projects” or “helps me with my health.” For every request, Need to Know retrieves a small set of relevant facts, asks Jev whether the fact is needed and reasonably expected for that role, and releases the exact fact, a safer version, or nothing.
 
 This is a fast local prototype for [Sundai Hack 141: Agent Memory Frontier](https://www.sundai.club/events/boston/sundai-hack-141-agent-memory-frontier).
