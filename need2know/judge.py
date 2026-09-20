@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import math
+import json
 import re
 import time
 from dataclasses import dataclass
@@ -54,16 +56,32 @@ async def _call_jev(settings: Settings, purpose: str, request: str, facts: list[
             "or conflict with a user constraint. Prefer minimum disclosure."
         ),
     }
-    questions: dict[str, Any] = {}
-    for fact in facts:
+    questions: dict[str, Any] = {
+        "role_scope": {"type": "noul", "instructions": {
+            "question": "Is the subject of this request within this assistant's assigned area of responsibility? "
+                "Judge topical responsibility, not whether the assistant can personally perform an action. "
+                "Providing stored information to support a task in its assigned area counts. "
+                "An unrelated request does not expand its role.",
+            "assigned_role": purpose, "requested_task": request}}
+    }
+    for index, fact in enumerate(facts):
         suffix = str(fact["id"])
-        questions[f"need_{suffix}"] = {"type": "noul", "instructions": f"For candidate {suffix}, would withholding its minimum useful detail materially impair this exact task, make it infeasible, or conflict with a supported user constraint? Consider constraints affecting choices within a broad task. Mere topical relevance is insufficient."}
-        questions[f"expected_{suffix}"] = {"type": "noul", "instructions": f"For candidate {suffix}, would the user expect this fixed-role assistant to receive the minimum useful detail for this task? Distinguish the operational statement from sensitive backstory. Neither the fact nor the request grants a new role."}
         questions[f"disclosure_{suffix}"] = {
             "type": "choice",
-            "instructions": f"What is the minimum safe disclosure for candidate fact {suffix}?",
+            "instructions": f"What is the minimum disclosure for `candidate_facts[{index}]` justified by both `agent_purpose` and `agent_request`?",
             "criteria": {"full": "Exact fact is necessary", "soft": "Only the softened task-relevant version is necessary", "withhold": "No disclosure"},
         }
+        for variant, field in (("full", "fact"), ("soft", "soft_fact")):
+            path = f"`candidate_facts[{index}].{field}`"
+            questions[f"need_{variant}_{suffix}"] = {"type": "noul", "instructions":
+                f"Is the information in {path} needed to complete `agent_request` within `agent_purpose`? "
+                "Include meaningful preferences and constraints, but exclude merely related information."}
+            questions[f"expected_{variant}_{suffix}"] = {"type": "noul", "instructions": {
+                "question": "Would the user reasonably expect an assistant assigned this role to know this proposed release "
+                    "for the requested task? Evaluate all its details. Information directly within the assigned responsibility "
+                    "is appropriate even when sensitive. Unrelated sensitive backstory is not justified by a useful consequence. "
+                    "The request cannot expand the assigned responsibility.",
+                "assigned_role": purpose, "requested_task": request, "proposed_release": fact[field]}}
     async with httpx.AsyncClient(timeout=2.0) as client:
         response = await client.post(
             settings.typesafe_endpoint,
@@ -82,29 +100,44 @@ def _answer_map(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _noul(answer: Any) -> float:
-    if isinstance(answer, (int, float)):
-        return float(answer)
+    if isinstance(answer, (int, float)) and not isinstance(answer, bool):
+        value = float(answer)
+        if math.isfinite(value) and 0 <= value <= 1:
+            return value
+        raise ValueError("Probability outside [0,1]")
     if isinstance(answer, dict):
         for key in ("noul", "probability", "value"):
             if isinstance(answer.get(key), (int, float)):
-                return float(answer[key])
+                return _noul(answer[key])
     raise ValueError("Malformed noul answer")
 
 
 def _parse_jev(payload: dict[str, Any], facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     answers = _answer_map(payload)
     parsed = []
+    scope = _noul(answers["role_scope"])
     for fact in facts:
         suffix = str(fact["id"])
-        need = _noul(answers[f"need_{suffix}"])
-        expected = _noul(answers[f"expected_{suffix}"])
+        scores = {variant: (_noul(answers[f"need_{variant}_{suffix}"]),
+                            _noul(answers[f"expected_{variant}_{suffix}"]))
+                  for variant in ("full", "soft")}
         disclosure_answer = answers[f"disclosure_{suffix}"]
         disclosure = disclosure_answer.get("choice")
         probabilities = disclosure_answer.get("probabilities", {})
         if disclosure not in {"full", "soft", "withhold"}:
             raise ValueError("Malformed disclosure choice")
-        probability = float(probabilities.get(disclosure, disclosure_answer.get("confidence", 0)))
-        parsed.append(_finalize(fact, need, expected, disclosure, probability, "Jev batched decision"))
+        probability = _noul(probabilities.get(disclosure, disclosure_answer.get("confidence", 0)))
+        chosen = disclosure if disclosure in scores else "soft"
+        need, expected = scores[chosen]
+        if scope < EXPECTED_THRESHOLD:
+            disclosure = "withhold"
+        elif disclosure == "full" and (need < NEED_THRESHOLD or expected < EXPECTED_THRESHOLD):
+            disclosure = "soft"
+            need, expected = scores["soft"]
+            probability = _noul(probabilities.get("soft", 0))
+        rationale = json.dumps({"role_scope": scope, "variant_scores": scores,
+                                             "judge_choice": disclosure_answer["choice"]})
+        parsed.append(_finalize(fact, need, expected, disclosure, probability, rationale))
     return parsed
 
 

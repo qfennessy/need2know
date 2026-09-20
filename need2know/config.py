@@ -22,7 +22,7 @@ class Settings:
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
-            db_path=Path(os.getenv("N2K_DB_PATH", "data/need2know.db")).expanduser(),
+            db_path=Path(os.getenv("N2K_DB_PATH", "~/.config/need2know/need2know.db")).expanduser(),
             judge_mode=os.getenv("N2K_JUDGE_MODE", "jev").lower(),
             typesafe_api_key=os.getenv("TYPESAFE_API_KEY") or None,
             typesafe_endpoint=os.getenv(

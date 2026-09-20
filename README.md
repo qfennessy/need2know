@@ -9,10 +9,12 @@ This is a fast local prototype for [Sundai Hack 141: Agent Memory Frontier](http
 Everything is stored on the user's machine in one SQLite database. By default that file is:
 
 ```text
-./data/need2know.db
+~/.config/need2know/need2know.db
 ```
 
-Set `N2K_DB_PATH` to put it somewhere else. The database is intentionally ignored by Git; it is the user's private data, not an application artifact.
+Set `N2K_DB_PATH` to put it somewhere else. All worktrees share this default path.
+The database lives outside Git; it is the user's private data, not an application artifact.
+Existing `.env` files with an old `N2K_DB_PATH` override should be updated to this path.
 
 | Table | What it contains |
 | --- | --- |
@@ -110,6 +112,17 @@ Example proposal:
 
 Allowed sources are `user_statement` and `user_provided_record`. The MCP server rejects inferences, empty fields, oversized fields, and confidence values outside 0–1.
 
-## Configuration
+## Evaluate access decisions
+
+Live disclosure now checks task scope against the fixed role and evaluates need
+and expected access separately for the exact and softened text. A full release
+cannot borrow the softer version's access scores. All checks remain in one Jev
+batch; scope and both versions' scores are retained in the audit rationale.
+
+Run `uv run python scripts/evaluate_memory.py` for a live Jev matrix using
+fictional facts in a separate database. See [evaluation instructions](docs/evaluation.md)
+for cases, retrieval-versus-judge comparison, repetitions, and report formats.
+
+## Environment
 
 Copy `.env.example` to `.env` and set `TYPESAFE_API_KEY`. `N2K_JUDGE_MODE=jev` uses TypeSafe Jev over HTTP with a two-second timeout. Keep `.env` local; it must never be committed.
