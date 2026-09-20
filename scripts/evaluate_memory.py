@@ -228,7 +228,15 @@ async def run(args):
         totals = Counter(r['failure'] for r in selected if r['failure'])
         passed = Counter(r['actual'] for r in selected if not r['failure'])
         title = "NORMAL SEARCH: Jev sees only the retrieved facts" if mode == 'retrieval' else "JUDGE ONLY: Jev sees every fact, with search skipped"
+        correct = passed['full'] + passed['soft']
+        released = sum(r['actual'] in ('full', 'soft') for r in selected)
+        needed = sum('withhold' not in r['expected'].split('|') for r in selected)
+        precision = f"{100 * correct / released:.1f}% ({correct}/{released})" if released else "N/A (nothing shared)"
+        recall = f"{100 * correct / needed:.1f}% ({correct}/{needed})" if needed else "N/A (nothing needed)"
         lines.extend(["", title, "",
+            f"  Release precision: {precision} — Of everything shared, how much was allowed?",
+            f"  Release recall:    {recall} — Of everything needed, how much was shared correctly?",
+            "  Higher is better for both; sharing too much detail is not a correct release.", "",
             f"  {passed['full'] + passed['soft']:5,} facts were shared correctly.",
             f"  {passed['withhold']:5,} facts were correctly kept private by Jev."])
         if mode == 'retrieval':

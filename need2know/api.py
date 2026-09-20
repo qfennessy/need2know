@@ -196,11 +196,77 @@ ADVERSARIAL_FLOW_DIAGRAM = """
 """
 
 
+EVALUATION_DOCS = """
+<section class="eval-docs" aria-labelledby="eval-title">
+  <div class="eyebrow">TESTING THE MEMORY DOOR</div>
+  <h2 id="eval-title">Does the right agent learn the right amount?</h2>
+  <p>Keeping everything private is not enough. The evaluation checks both sides:
+  useful facts must reach the right assistant, and unrelated or excessive detail must stay private.</p>
+  <div class="eval-grid">
+    <article><h3>Same question, different roles</h3><p>11 questions × 8 agent roles × 15 fictional facts.
+    Cases cover health preferences, travel, coding, confidential business matters, family finances,
+    and requests that claim authority the agent does not have.</p></article>
+    <article><h3>Two ways to find the problem</h3><p><b>Normal search:</b> Jev sees the eight retrieved facts.
+    <br><b>Judge only:</b> Jev sees all 15 facts.
+    <br>Comparing these helps distinguish a search miss from a disclosure mistake.</p></article>
+    <article><h3>Your memories stay untouched</h3><p>Each run creates a separate temporary SQLite database
+    containing fictional fixtures. It uses live Jev by default and makes 176 requests,
+    four at a time. Repeating the run helps reveal inconsistent decisions.</p></article>
+  </div>
+  <h3>Run it from the project directory</h3>
+  <pre>uv run python scripts/evaluate_memory.py --batch-size 4
+
+# Focus on one question and repeat it three times
+uv run python scripts/evaluate_memory.py --case medication-role-boundary --repeat 3</pre>
+  <p>The script uses your local embedding model and Jev key from <code>.env</code>.
+  If the model lives elsewhere, add <code>--model-path PATH</code>.
+  <code>--judge offline</code> rehearses the runner only; it does not evaluate Jev.</p>
+  <h3>Read the outcome, not just the connection status</h3>
+  <p><code>api=ok</code> means Jev answered. <code>PASS</code> means the disclosures matched the scenario’s
+  expected answers. Add <code>--verbose</code> to show each request’s verdict.</p>
+  <dl>
+    <dt>Shared correctly</dt><dd>The assistant received an allowed exact or softer fact.</dd>
+    <dt>Kept private correctly</dt><dd>Jev considered the fact and withheld it as expected.</dd>
+    <dt>Correctly left out of search</dt><dd>The fact was not needed and never reached Jev.</dd>
+    <dt>Shared when it should stay private</dt><dd>The assistant learned a fact the scenario says it should not receive.</dd>
+    <dt>Too much detail</dt><dd>The exact fact was released when only the softer statement was allowed.</dd>
+    <dt>Needed but withheld</dt><dd>The fact reached Jev, but a useful disclosure was blocked.</dd>
+    <dt>Missed by search</dt><dd>A needed fact never reached the judge.</dd>
+    <dt>Judge failed</dt><dd>An error prevented evaluation. Withholding on error does not count as a passing test.</dd>
+  </dl>
+  <h3>Every failure has evidence</h3>
+  <p>The terminal report includes the question, assigned role, original and softer fact, expected and actual
+  outcome, released text, scores and cutoffs, audit number, and a comparison with the other search mode.
+  Its diagnosis describes the recorded checks; it does not claim to know the model’s hidden reasoning.</p>
+  <p>The output folder contains <code>report.txt</code> for people, <code>matrix.csv</code> and
+  <code>results.json</code> for analysis, and <code>audit.db</code> for the full decision trail.
+  Exit code 1 means a mismatch or judge error was found; the reports are still saved.</p>
+  <div class="eval-limit"><b>What this proves—and what it doesn’t</b>
+  <p>Expected answers are explicit benchmark assumptions, not production access rules.
+  Review ambiguous expectations before tuning the judge. These tests use prepared softer statements;
+  they do not test Sonnet generation or a real MCP client session. Passing this matrix alone does not
+  prove the system prevents every disclosure.</p>
+  <p>General improvements should be checked on new people, roles, domains, and paraphrases.
+  The current matrix is a starting point, not that full generalization test.</p></div>
+</section>
+<style>
+.eval-docs{margin-top:54px;padding:30px;background:#fff;border:1px solid #d8d3c9;border-radius:20px;font-size:20px;line-height:1.55}
+.eval-docs h2{font:700 38px/1.15 Georgia;margin:8px 0 16px}.eval-docs h3{font-size:24px;margin:26px 0 8px}
+.eval-docs p{color:#506057;margin:8px 0 16px}.eval-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.eval-grid article{padding:20px;background:#edf4ef;border-radius:14px}.eval-grid h3{margin-top:0}
+.eval-docs pre{padding:20px;background:#17221c;color:#e2eee5;border-radius:12px;overflow:auto;font:16px/1.6 ui-monospace,monospace}
+.eval-docs dl{display:grid;grid-template-columns:minmax(180px,1fr) 2fr;gap:12px 24px}.eval-docs dt{font-weight:750}.eval-docs dd{margin:0;color:#506057}
+.eval-limit{background:#f5f1e8;padding:20px;border-radius:12px;margin-top:24px}
+@media(max-width:850px){.eval-grid{grid-template-columns:1fr}.eval-docs dl{grid-template-columns:1fr;gap:6px}.eval-docs dd{margin-bottom:16px}}
+</style>
+"""
+
+
 @app.get("/", response_class=HTMLResponse)
 def demo() -> str:
     return TERMINAL_HTML.replace(
         "</main><style>",
-        f"{PROPOSAL_DEMO}{PROTOCOL_DOCS}{ADVERSARIAL_FLOW_DIAGRAM}</main><style>",
+        f"{PROPOSAL_DEMO}{PROTOCOL_DOCS}{ADVERSARIAL_FLOW_DIAGRAM}{EVALUATION_DOCS}</main><style>",
         1,
     )
 

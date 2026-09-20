@@ -1,5 +1,9 @@
 # Memory access matrix
 
+See the [recorded baseline](evaluation-baseline.md) for comparison numbers and
+plain-language definitions of release precision and recall. Both metrics are
+also annotated directly in the terminal report; higher is better for both.
+
 Run from the repository root after installing dependencies and the local model:
 
 ```sh
