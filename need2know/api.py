@@ -86,6 +86,16 @@ TERMINAL_HTML = """<!doctype html>
   </table></div>
   <p>Softer-search experiment: 104 live Jev requests, one repeat. Unauthorized releases: 1 → 0; needed facts withheld: 8 → 6; search misses: 1 → 2. No API errors. A better score in this run, not proof of stable improvement; search coverage worsened. Recorded run: need2know-eval-pxar6ljs.</p>
   <p>Baseline set September 20, 2026 · scoped-v2 · one live Jev run. Future comparisons use these same benchmark expectations. Not a safety guarantee or a live measurement.</p>
+  <section aria-labelledby="next-improvements-title">
+    <h3 id="next-improvements-title">Three next improvements to evaluate</h3>
+    <p>Proposals only—not implemented or included in the scores above.</p>
+    <ol style="font-size:20px;line-height:1.55;display:grid;gap:16px;padding-left:28px">
+      <li><b>Retrieve prerequisites, not just similar words.</b> Expand the request into a few general information needs—preferences, constraints, dependencies, and authority needed to complete the task. Search those alongside the original question, merge duplicates, and still send at most eight facts to Jev. This may find important facts that use different language; expansion must not invent user facts or grant permission.</li>
+      <li><b>Protect candidate diversity.</b> Fuse original-text, softer-text, and independent keyword search rankings before selecting eight facts. Reduce near-duplicate candidates so one topic cannot crowd out another necessary constraint. Evaluate whether this recovers search misses without introducing more irrelevant disclosures.</li>
+      <li><b>Isolate permission from the request.</b> Give the permission judge only the fixed role and proposed disclosure text in a separate call—not the user’s request or other candidate facts. Then require both permission and task usefulness to pass. This makes the separation real rather than an instruction inside shared context; it adds latency and must not reduce useful recall.</li>
+    </ol>
+    <p>Evaluate each change separately on the frozen scoped-v2 normal-retrieval benchmark, with repeated runs. Report F1, precision, recall, unauthorized releases, search misses, and individual-request latency. Do not lower thresholds or relax expected outcomes to improve scores.</p>
+  </section>
 </section>
 <style>
 .latest-scores{background:#fff;border:1px solid #d8d3c9;border-radius:18px;padding:24px;margin-bottom:24px}.score-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:14px}.score-cards article{background:#edf4ef;border-radius:12px;padding:20px}.score-cards strong{display:block;font-size:46px;line-height:1.15;color:#174b38}.score-cards b{display:block;font-size:24px;margin:8px 0}.score-cards span{font-size:19px;color:#506057}.latest-scores p{font-size:15px;color:#59665e;margin:16px 0 0}@media(max-width:650px){.score-cards{grid-template-columns:1fr}}
