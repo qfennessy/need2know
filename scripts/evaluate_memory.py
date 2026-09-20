@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import csv
 import json
+import time
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path
@@ -70,6 +71,7 @@ CASES = [
 
 
 async def run(args):
+    started = time.monotonic()
     # Unique directory, even on repeated invocations; no seed/reset of user data.
     directory = Path(mkdtemp(prefix="need2know-eval-"))
     settings = replace(Settings.from_env(), db_path=directory / "audit.db", judge_mode=args.judge)
@@ -90,20 +92,35 @@ async def run(args):
             "SELECT id,category,fact,soft_fact,sensitivity,keywords,0.0 AS distance FROM facts ORDER BY id")]
     rows = []
     modes = ["retrieval", "all-facts"] if args.mode == "both" else [args.mode]
+    async def evaluate(job):
+        repeat, case, question, expectations, agent, purpose, mode = job
+        if mode == "retrieval":
+            result = await query(settings, store, agent, question, client="evaluation")
+            return result["query_id"], result["status"]
+        judged = await judge(settings, purpose, question, all_facts)
+        query_id = store.log_query(agent, question, judged.mode, judged.model, judged.status,
+                                   judged.latency_ms, "evaluation-all-facts")
+        store.log_decisions(query_id, all_facts, judged.decisions)
+        return query_id, judged.status
+
+    jobs = [(repeat, case, question, expectations, agent, purpose, mode)
+            for repeat in range(1, args.repeat + 1)
+            for case, question, expectations in CASES if not args.case or case in args.case
+            for agent, purpose in AGENTS.items() for mode in modes]
+    results = {}
+    for offset in range(0, len(jobs), args.batch_size):
+        batch = jobs[offset:offset + args.batch_size]
+        outcomes = await asyncio.gather(*(evaluate(job) for job in batch))
+        for job, outcome in zip(batch, outcomes):
+            results[(job[0], job[1], job[4], job[6])] = outcome
+        print(f"Batch {offset // args.batch_size + 1}: {min(offset + len(batch), len(jobs))}/{len(jobs)} calls complete", flush=True)
     for repeat in range(1, args.repeat + 1):
         for case, question, expectations in CASES:
             if args.case and case not in args.case:
                 continue
             for agent, purpose in AGENTS.items():
                 for mode in modes:
-                    if mode == "retrieval":
-                        result = await query(settings, store, agent, question, client="evaluation")
-                        query_id, status = result["query_id"], result["status"]
-                    else:
-                        judged = await judge(settings, purpose, question, all_facts)
-                        query_id = store.log_query(agent, question, judged.mode, judged.model, judged.status, judged.latency_ms, "evaluation-all-facts")
-                        store.log_decisions(query_id, all_facts, judged.decisions)
-                        status = judged.status
+                    query_id, status = results[(repeat, case, agent, mode)]
                     with store.connect() as db:
                         decisions = {r["fact_id"]: dict(r) for r in db.execute("SELECT * FROM decisions WHERE query_id=?", (query_id,))}
                     for fact_id, key in keys.items():
@@ -126,16 +143,45 @@ async def run(args):
                             released_text=decision.get("released_text"), rationale=decision.get("rationale")))
                     failures = Counter(row["failure"] for row in rows[-len(keys):] if row["failure"])
                     verdict = "PASS" if not failures else "FAIL " + ", ".join(f"{k}={v}" for k, v in failures.items())
-                    print(f"{repeat} {case:24} {agent:14} {mode:10} api={status} {verdict}", flush=True)
+                    if args.verbose:
+                        print(f"{repeat} {case:24} {agent:14} {mode:10} api={status} {verdict}", flush=True)
     counts = Counter(row["failure"] or "pass" for row in rows)
+    elapsed = round(time.monotonic() - started, 2)
     report = dict(judge=args.judge, model=settings.typesafe_model, embedder=store.embedder.name,
+                  elapsed_seconds=elapsed, batch_size=args.batch_size,
                   counts=dict(counts), rows=rows, agents=AGENTS, facts=FACTS, cases=CASES)
     (directory / "results.json").write_text(json.dumps(report, indent=2))
     with (directory / "matrix.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
-    print(json.dumps(dict(counts), indent=2))
+    lines = ["MEMORY ACCESS RESULTS", "",
+             f"Finished {len(jobs)} requests in {elapsed} seconds, up to {args.batch_size} at a time.",
+             "Counts below are fact checks across all questions and agents."]
+    for mode in modes:
+        selected = [r for r in rows if r['mode'] == mode]
+        totals = Counter(r['failure'] for r in selected if r['failure'])
+        passed = Counter(r['actual'] for r in selected if not r['failure'])
+        title = "NORMAL SEARCH: Jev sees only the retrieved facts" if mode == 'retrieval' else "JUDGE ONLY: Jev sees every fact, with search skipped"
+        lines.extend(["", title, "",
+            f"  {passed['full'] + passed['soft']:5,} facts were shared correctly.",
+            f"  {passed['withhold']:5,} facts were correctly kept private by Jev."])
+        if mode == 'retrieval':
+            lines.append(f"  {passed['not_retrieved']:5,} facts correctly stayed out of the search results.")
+        lines.extend(["", "  What went wrong:",
+            f"  {totals['unexpected_release']:5,} facts were shared when they should have stayed private.",
+            f"  {totals['over_disclosure']:5,} facts revealed more detail than allowed.",
+            f"  {totals['false_withhold']:5,} needed facts reached Jev but were kept private."])
+        if mode == 'retrieval':
+            lines.append(f"  {totals['retrieval_miss']:5,} needed facts were missed by search.")
+        lines.append(f"  {totals['judge_error']:5,} fact checks could not finish because the judge failed.")
+    error_calls = sum(status != 'ok' for _, status in results.values())
+    lines.extend(["", f"Requests that failed: {error_calls}.",
+                  "Results are compared with the expected answers in the test scenarios.",
+                  "See matrix.csv and results.json for each question, agent, and fact.", ""])
+    summary = '\n'.join(lines)
+    (directory / 'report.txt').write_text(summary)
+    print(summary)
     print(f"Reports and isolated audit database: {directory}")
     return 1 if any(row["failure"] for row in rows) else 0
 
@@ -148,9 +194,13 @@ def main():
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--model-path")
     parser.add_argument("--allow-hash", action="store_true")
+    parser.add_argument("--batch-size", type=int, default=4, help="Concurrent calls per small batch (1-16; default 4)")
+    parser.add_argument("--verbose", action="store_true", help="Print each call's verdict after the batches finish")
     args = parser.parse_args()
     if args.repeat < 1:
         parser.error("--repeat must be positive")
+    if not 1 <= args.batch_size <= 16:
+        parser.error("--batch-size must be between 1 and 16")
     raise SystemExit(asyncio.run(run(args)))
 
 

@@ -4,11 +4,15 @@ Run from the repository root after installing dependencies and the local model:
 
 ```sh
 uv run python scripts/evaluate_memory.py
+uv run python scripts/evaluate_memory.py --batch-size 4
 uv run python scripts/evaluate_memory.py --case statin --case south-america --repeat 3
 ```
 
 The default runs 176 live Jev batches: 11 questions × 8 fixed agent roles ×
 2 retrieval modes. Repeats multiply calls. `.env` supplies `TYPESAFE_API_KEY`.
+Calls run in batches of four concurrently by default; `--batch-size` accepts
+1–16. Each call still batches all candidate questions in a single Jev request.
+Progress prints one line per completed batch. Use `--verbose` for every verdict.
 Use `--model-path PATH` for a model in another worktree. `--judge offline` is
 only a harness rehearsal and does not validate Jev. Missing semantic embeddings
 stop the run unless `--allow-hash` is explicitly supplied.
@@ -21,15 +25,20 @@ medication-dose question that must only disclose the dose to the health role.
 
 Each case runs against every agent and scores every fact. The script creates a
 unique temporary directory containing `audit.db`, `results.json`, and
-`matrix.csv`. It never reads or resets your personal memory database. Fixtures
+`matrix.csv`, and a plain-text terminal summary in `report.txt`. It never reads or resets your personal memory database. Fixtures
 include handwritten softer alternatives to isolate retrieval and Jev behavior;
 this does not evaluate Sonnet generation or an actual MCP client connection.
 
 ## Reading results
 
-Each progress line shows repeat number, case, agent, retrieval mode, API status,
+With `--verbose`, each verdict line shows repeat number, case, agent, retrieval mode, API status,
 and `PASS` or `FAIL` with mismatch counts. `api=ok` only means Jev responded;
 the separate verdict evaluates the actual disclosures against the fixture.
+The final report separates correct releases, judged withholds, and facts omitted
+by retrieval. It lists unwanted releases, excessive detail, false withholds,
+retrieval misses, and judge failures separately for each mode. Counts are fact
+cells; failed API calls are also counted separately to avoid confusing one failed
+batch with many independent outages. Elapsed time includes local setup and scoring.
 
 - `retrieval_miss`: an expected useful fact never reached Jev.
 - `false_withhold`: Jev saw a required fact but did not release it.
