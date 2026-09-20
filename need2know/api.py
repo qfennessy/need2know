@@ -29,7 +29,7 @@ DEMO_HTML = """<!doctype html>
   <h2>How agents call Need to Know</h2>
   <p>Every agent launches the same local FastMCP service with its own fixed <code>N2K_AGENT_ID</code>. The identity comes from its connection configuration, not from the prompt.</p>
   <div class="config"><b>Example agent configuration</b><pre>N2K_AGENT_ID=claude-health
-uv --directory /Users/quentinfennessy/src/need2know-codex-fast-prototype run need2know-mcp</pre></div>
+uv --directory . run need2know-mcp</pre></div>
   <div class="protocol-grid">
     <article><h3>Tool input: <code>recall</code></h3><pre>{
   "request": "What restaurant accommodations do I need while traveling?",
@@ -88,7 +88,7 @@ PROTOCOL_DOCS = """
   <h2>How agents call Need to Know</h2>
   <p>Each agent runs the same local FastMCP service, but with a fixed <code>N2K_AGENT_ID</code>. Identity comes from the connection configuration—not from a prompt an agent can change.</p>
   <div class="config"><b>Example configuration</b><pre>N2K_AGENT_ID=claude-health
-uv --directory /Users/quentinfennessy/src/need2know-codex-fast-prototype run need2know-mcp</pre></div>
+uv --directory . run need2know-mcp</pre></div>
   <div class="protocol-grid">
     <article><h3>Tool input: <code>recall</code></h3><pre>{
   "request": "What restaurant accommodations do I need while traveling?",
