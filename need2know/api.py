@@ -69,13 +69,13 @@ TERMINAL_HTML = """<!doctype html>
 </style></head><body><main><div class="eyebrow">NEED TO KNOW · SESSION WALL</div><div class="top"><div><h1>Three agents. One private door.</h1><p class="subtitle">Each terminal is a separate AI assistant. It has a fixed role, asks one temporary question, and receives only the minimum memory needed to answer it.</p></div></div>
 <section class="store"><i class="dot"></i><b>One local memory store</b><span>25 private facts · SQLite + sqlite-vec · every decision is audited</span></section>
 <section class="explain"><div><b>1. Agent + role</b><span>Who is asking, and what job do they have?</span></div><div class="arrow">→</div><div><b>2. Test question</b><span>What does that agent need for this one task?</span></div><div class="arrow">→</div><div><b>3. Result</b><span>Jev chooses: exact fact, safer version, or nothing.</span></div></section>
-<section class="terminal-grid" id="sessions"><div class="terminal"><div class="terminal-head"><span class="lights"><i class="light"></i><i class="light"></i><i class="light"></i></span>Loading sessions…</div></div></section><p class="note">Claude is connected through the actual project MCP server. Codex and Muse are ready for their own MCP configuration next.</p><section class="facts"><div class="facts-head"><div><div class="eyebrow">LOCAL MEMORY STORE</div><h2>Everything saved here</h2><p>These are the exact private facts in your local Need to Know database. Assistants only receive a fact when the access check allows it.</p></div><span id="fact-count" class="fact-count">Loading…</span></div><div id="fact-list" class="fact-list"></div></section></main><style>.facts{margin-top:54px;background:#fff;border:1px solid #d8d3c9;border-radius:20px;padding:28px}.facts-head{display:flex;justify-content:space-between;gap:22px;align-items:start}.facts h2{font:700 36px/1.1 Georgia;margin:5px 0}.facts p{max-width:720px;color:#59665e;margin:8px 0 0}.fact-count{white-space:nowrap;background:#e1eee5;color:#1c593d;border-radius:999px;padding:8px 12px;font-size:15px;font-weight:900}.fact-list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}.fact{border:1px solid #e1ded6;border-radius:13px;padding:16px}.fact p{color:#17221c;font-weight:700;font-size:18px;line-height:1.35;margin:11px 0 9px}.fact small{display:block;color:#66736a;line-height:1.4}.fact-category,.fact-sensitivity{display:inline-block;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:900}.fact-category{background:#dceae3;color:#175139;text-transform:capitalize}.fact-sensitivity{background:#eeeae2;color:#665d53;margin-left:5px}@media(max-width:700px){.facts-head,.fact-list{display:block}.fact{margin-top:10px}.fact-count{display:inline-block;margin-top:15px}}</style>
+<section class="terminal-grid" id="sessions"><div class="terminal"><div class="terminal-head"><span class="lights"><i class="light"></i><i class="light"></i><i class="light"></i></span>Loading sessions…</div></div></section><p class="note">Claude is connected through the actual project MCP server. Muse is configured to launch that same server as the travel agent; start a new trusted Muse session to connect it.</p><section class="facts"><div class="facts-head"><div><div class="eyebrow">LOCAL MEMORY STORE</div><h2>Everything saved here</h2><p>These are the exact private facts in your local Need to Know database. Assistants only receive a fact when the access check allows it.</p></div><span id="fact-count" class="fact-count">Loading…</span></div><div id="fact-list" class="fact-list"></div></section></main><style>.facts{margin-top:54px;background:#fff;border:1px solid #d8d3c9;border-radius:20px;padding:28px}.facts-head{display:flex;justify-content:space-between;gap:22px;align-items:start}.facts h2{font:700 36px/1.1 Georgia;margin:5px 0}.facts p{max-width:720px;color:#59665e;margin:8px 0 0}.fact-count{white-space:nowrap;background:#e1eee5;color:#1c593d;border-radius:999px;padding:8px 12px;font-size:15px;font-weight:900}.fact-list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}.fact{border:1px solid #e1ded6;border-radius:13px;padding:16px}.fact p{color:#17221c;font-weight:700;font-size:18px;line-height:1.35;margin:11px 0 9px}.fact small{display:block;color:#66736a;line-height:1.4}.fact-category,.fact-sensitivity{display:inline-block;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:900}.fact-category{background:#dceae3;color:#175139;text-transform:capitalize}.fact-sensitivity{background:#eeeae2;color:#665d53;margin-left:5px}@media(max-width:700px){.facts-head,.fact-list{display:block}.fact{margin-top:10px}.fact-count{display:inline-block;margin-top:15px}}</style>
 <script>
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const panels=[{id:'claude-health',name:'Claude Health',shell:'claude@health',state:'connected',connection:'MCP connected',role:'helps with health, medications, symptoms, appointments, and food needs'},{id:'codex-code',name:'Codex',shell:'codex@projects',state:'waiting',connection:'MCP next',role:'writes code in my projects and helps with my software development setup'},{id:'muse-travel',name:'Muse',shell:'muse@travel',state:'waiting',connection:'MCP next',role:'plans travel, restaurants, lodging, and activities that fit my preferences and access needs'}];
+const panels=[{id:'claude-health',name:'Claude Health',shell:'claude@health',state:'connected',connection:'MCP connected',role:'helps with health, medications, symptoms, appointments, and food needs'},{id:'codex-code',name:'Codex',shell:'codex@projects',state:'waiting',connection:'MCP next',role:'writes code in my projects and helps with my software development setup'},{id:'muse-travel',name:'Muse',shell:'muse@travel',state:'configured',connection:'MCP configured',role:'plans travel, restaurants, lodging, and activities that fit my preferences and access needs'}];
 let audit=[],tests={};
 function latestGroup(p){let rows=audit.filter(d=>d.agent_id===p.id&&(p.id!=='claude-health'||d.client==='mcp'));if(!rows.length)return null;let id=Math.max(...rows.map(d=>d.query_id));return {query_id:id,request:rows.find(d=>d.query_id===id).request,items:rows.filter(d=>d.query_id===id)}}
-function panel(p){let g=tests[p.id]||latestGroup(p),shared=g?.memories||g?.items.filter(x=>x.outcome!=='withhold')||[];let result=shared.length?shared.map(d=>d.memory||d.released_text).join(' '):'Nothing was shared.';let privateCount=g?.withheld_count??(g?g.items.length-shared.length:0);let request=g?.request||'';let actual=p.state==='connected'&&!tests[p.id]&&g?.items?.[0]?.client==='mcp';return `<article class="terminal"><header class="terminal-head"><span class="lights"><i class="light"></i><i class="light"></i><i class="light"></i></span>${esc(p.shell)}<span style="margin-left:auto" class="status ${p.state==='waiting'?'waiting':''}"><i></i>${esc(p.connection)}</span></header><div class="terminal-body"><div class="agent-label"><h2>${esc(p.name)}</h2><span class="status ${p.state==='waiting'?'waiting':''}">${actual?'LIVE':p.state==='waiting'?'NEXT':'TEST'}</span></div><div class="role"><b>Fixed role</b>${esc(p.role)}</div><div class="test-label">TEST PROMPT</div><div class="test-entry"><input id="input-${p.id}" value="${esc(request)}" placeholder="Ask this agent something…"><button id="run-${p.id}" onclick="runTest('${p.id}')">Run test</button></div><div class="command"><span class="prompt">${esc(p.shell)} $</span> <span class="mcp">recall</span><br>“${esc(request||'Waiting for your test prompt…')}”</div><div class="reply ${shared.length?'':'private'}"><span class="mcp">RESULT</span><br>${esc(result)}</div><div class="meta">${g?`${shared.length} memory shared · ${privateCount} kept private · audit #${g.query_id}`:'No audit entry yet'}${actual?' · real Claude MCP session':tests[p.id]?' · dashboard test':''}</div></div></article>`}
+function panel(p){let g=tests[p.id]||latestGroup(p),shared=g?.memories||g?.items.filter(x=>x.outcome!=='withhold')||[];let result=shared.length?shared.map(d=>d.memory||d.released_text).join(' '):'Nothing was shared.';let privateCount=g?.withheld_count??(g?g.items.length-shared.length:0);let request=g?.request||'';let actual=p.state==='connected'&&!tests[p.id]&&g?.items?.[0]?.client==='mcp';let stage=actual?'LIVE':p.state==='configured'?'READY':p.state==='waiting'?'NEXT':'TEST';return `<article class="terminal"><header class="terminal-head"><span class="lights"><i class="light"></i><i class="light"></i><i class="light"></i></span>${esc(p.shell)}<span style="margin-left:auto" class="status ${p.state==='waiting'?'waiting':''}"><i></i>${esc(p.connection)}</span></header><div class="terminal-body"><div class="agent-label"><h2>${esc(p.name)}</h2><span class="status ${p.state==='waiting'?'waiting':''}">${stage}</span></div><div class="role"><b>Fixed role</b>${esc(p.role)}</div><div class="test-label">TEST PROMPT</div><div class="test-entry"><input id="input-${p.id}" value="${esc(request)}" placeholder="Ask this agent something…"><button id="run-${p.id}" onclick="runTest('${p.id}')">Run test</button></div><div class="command"><span class="prompt">${esc(p.shell)} $</span> <span class="mcp">recall</span><br>“${esc(request||'Waiting for your test prompt…')}”</div><div class="reply ${shared.length?'':'private'}"><span class="mcp">RESULT</span><br>${esc(result)}</div><div class="meta">${g?`${shared.length} memory shared · ${privateCount} kept private · audit #${g.query_id}`:'No audit entry yet'}${actual?' · real Claude MCP session':tests[p.id]?' · dashboard test':''}</div></div></article>`}
 function render(){document.querySelector('#sessions').innerHTML=panels.map(panel).join('')}
 function renderFacts(facts){document.querySelector('#fact-count').textContent=`${facts.length} facts saved locally`;document.querySelector('#fact-list').innerHTML=facts.map(f=>`<article class="fact"><div><span class="fact-category">${esc(f.category)}</span><span class="fact-sensitivity">${esc(f.sensitivity)} sensitivity</span></div><p>${esc(f.fact)}</p><small>Safer version: ${esc(f.soft_fact)}</small></article>`).join('')}
 async function runTest(agentId){const input=document.querySelector('#input-'+agentId),button=document.querySelector('#run-'+agentId),request=input.value.trim();if(!request)return;button.disabled=true;button.textContent='Running…';try{let response=await fetch('/api/query',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({agent_id:agentId,request})}),data=await response.json();if(!response.ok)throw Error(data.detail);tests[agentId]={...data,request};render()}catch(error){button.textContent=error.message}finally{if(document.body.contains(button)){button.disabled=false;button.textContent='Run test'}}}
@@ -128,15 +128,63 @@ uv --directory /Users/quentinfennessy/src/need2know-codex-fast-prototype run nee
 </style>
 """
 
+PROPOSAL_DEMO = """
+<section class="proposal-demo" aria-labelledby="proposal-title">
+  <div class="proposal-heading">
+    <div><div class="eyebrow">A SEPARATE, HUMAN-CONTROLLED PATH</div><h2 id="proposal-title">An agent can propose a memory. It cannot save one.</h2><p>Use this to demonstrate <code>propose_memory</code>. A direct user statement becomes a review item—not a searchable fact and not something another agent can retrieve.</p></div>
+    <div class="proposal-lock">🔒 <b>Pending means private</b><span>Never added to the fact store automatically</span></div>
+  </div>
+  <div class="proposal-grid">
+    <form id="proposal-form" class="proposal-form">
+      <div class="terminal-line"><span>codex@projects $</span> propose_memory</div>
+      <label>Which agent heard it?<select name="agent_id"><option value="codex-code">Codex · writes code</option><option value="claude-health">Claude Health · helps with health</option><option value="muse-travel">Muse · plans travel</option></select></label>
+      <label>Direct user statement<textarea name="fact" rows="3">I prefer Python 3.13 for this project.</textarea></label>
+      <label>Safer version (what a future task actually needs)<input name="soft_fact" value="Use Python 3.13 for this project."></label>
+      <div class="proposal-options"><label>Category<input name="suggested_category" value="technical"></label><label>Confidence<select name="confidence"><option value="0.95">95%</option><option value="0.8">80%</option><option value="0.65">65%</option></select></label></div>
+      <input type="hidden" name="source" value="user_statement">
+      <button type="submit">Propose for review</button>
+      <p class="proposal-helper">Only direct statements or user-provided records are accepted. Guesses and inferences are rejected.</p>
+    </form>
+    <aside class="proposal-result"><div class="result-caption">TOOL RESULT</div><div id="proposal-output" class="proposal-output">Submit the sample statement to see the tool’s response.</div><div class="result-caption queue-caption">PENDING REVIEW QUEUE <span id="proposal-count">0</span></div><p class="review-intro">You are the only person who can turn a proposal into a retrievable fact. Choose its sensitivity, then approve or reject it.</p><div id="proposal-queue" class="proposal-queue">Loading pending proposals…</div></aside>
+  </div>
+</section>
+<style>
+.proposal-demo{margin-top:54px;padding:30px;background:#17221c;color:#eef5ef;border-radius:20px}.proposal-heading{display:flex;justify-content:space-between;gap:24px;align-items:start}.proposal-heading h2{font:700 38px/1.1 Georgia;margin:5px 0}.proposal-heading p{max-width:820px;color:#c1cec6;font-size:19px;margin:10px 0 0}.proposal-lock{min-width:230px;background:#284136;border-radius:12px;padding:13px;color:#d8eddf;font-size:14px}.proposal-lock b,.proposal-lock span{display:block}.proposal-lock span{color:#b5c9bb;margin-top:4px}.proposal-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:26px}.proposal-form,.proposal-result{border:1px solid #3d5144;border-radius:14px;padding:18px;background:#1e2b24}.terminal-line{font:16px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e7c967;margin-bottom:17px}.terminal-line span{color:#75dd9c}.proposal-form label{display:block;font-size:14px;font-weight:850;color:#c9d8cd;margin-top:12px}.proposal-form input,.proposal-form textarea,.proposal-form select{display:block;width:100%;margin-top:5px;border:1px solid #53665a;background:#0e1712;color:#fff;border-radius:8px;padding:10px;font:15px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}.proposal-form textarea{resize:vertical}.proposal-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.proposal-form button{margin-top:17px;border:0;border-radius:9px;background:#75dd9c;color:#112219;font-size:16px;font-weight:900;padding:11px 14px;cursor:pointer}.proposal-form button:disabled{opacity:.55}.proposal-helper,.review-intro{color:#aebdb3;font-size:14px;line-height:1.35;margin:12px 0 0}.result-caption{color:#e7c967;font-size:13px;font-weight:900;letter-spacing:.08em}.proposal-output{margin-top:8px;min-height:86px;border-left:3px solid #75dd9c;background:#152019;border-radius:0 9px 9px 0;padding:13px;color:#e4ece6;font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.queue-caption{margin-top:20px}.queue-caption span{display:inline-block;margin-left:5px;background:#e7c967;color:#2a2415;border-radius:99px;padding:1px 7px}.proposal-queue{margin-top:8px;display:grid;gap:8px}.proposal-item{padding:12px;border-radius:9px;background:#284136}.proposal-item b{display:block;font-size:16px}.proposal-item span{display:block;color:#c1d0c5;font-size:13px;margin-top:3px}.proposal-actions{display:flex;gap:7px;align-items:end;margin-top:11px}.proposal-actions label{flex:1;color:#c1d0c5;font-size:12px;font-weight:800}.proposal-actions select{display:block;width:100%;margin-top:4px;border:1px solid #53665a;background:#152019;color:#fff;border-radius:7px;padding:6px}.proposal-actions button{border:0;border-radius:7px;padding:8px 9px;font-weight:900;cursor:pointer}.proposal-actions .approve{background:#75dd9c;color:#112219}.proposal-actions .reject{background:#443d3a;color:#f3d5cf}.proposal-actions button:disabled{opacity:.55}.proposal-empty{color:#b6c5bb;padding:12px;background:#24342b;border-radius:9px;font-size:15px}@media(max-width:700px){.proposal-heading,.proposal-grid{display:block}.proposal-lock{margin-top:16px}.proposal-result{margin-top:14px}.proposal-heading h2{font-size:32px}}
+</style>
+<script>
+const proposalForm=document.querySelector('#proposal-form'),proposalOutput=document.querySelector('#proposal-output'),proposalQueue=document.querySelector('#proposal-queue'),proposalCount=document.querySelector('#proposal-count');
+function proposalEscape(value){const node=document.createElement('span');node.textContent=String(value??'');return node.innerHTML}
+function renderProposalQueue(items){proposalCount.textContent=items.length;proposalQueue.innerHTML=items.length?items.map(item=>`<article class="proposal-item"><b>#${item.id} · ${proposalEscape(item.agent_name)}</b><div>${proposalEscape(item.fact)}</div><span>Safer version: ${proposalEscape(item.soft_fact)}</span><span>${proposalEscape(item.suggested_category)} · ${Math.round(item.confidence*100)}% confidence · ${proposalEscape(item.source.replaceAll('_',' '))}</span><div class="proposal-actions"><label>Sensitivity<select id="sensitivity-${item.id}"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label><button class="reject" data-proposal="${item.id}" onclick="reviewProposal(${item.id},'rejected')">Reject</button><button class="approve" data-proposal="${item.id}" onclick="reviewProposal(${item.id},'accepted')">Approve</button></div></article>`).join(''):'<div class="proposal-empty">No pending proposals. Submitted ideas appear here until you review them.</div>'}
+async function loadProposalQueue(){const response=await fetch('/api/proposals?status=pending');if(!response.ok)throw Error('Could not load the review queue');renderProposalQueue(await response.json())}
+proposalForm.addEventListener('submit',async event=>{event.preventDefault();const button=proposalForm.querySelector('button'),values=Object.fromEntries(new FormData(proposalForm));values.confidence=Number(values.confidence);button.disabled=true;button.textContent='Staging…';proposalOutput.textContent='↳ Need to Know validates the source and stages a private review item…';try{const response=await fetch('/api/proposals',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(values)}),data=await response.json();if(!response.ok)throw Error(data.detail||'Proposal failed');proposalOutput.innerHTML=`✓ proposal #${proposalEscape(data.proposal_id)} · ${proposalEscape(data.status)}<br><span>Not saved as a fact. Not retrievable by any agent.</span>`;await loadProposalQueue()}catch(error){proposalOutput.textContent=`× ${error.message}`}finally{button.disabled=false;button.textContent='Propose for review'}});
+async function reviewProposal(id,decision){const buttons=proposalQueue.querySelectorAll(`[data-proposal="${id}"]`),sensitivity=document.querySelector(`#sensitivity-${id}`).value;buttons.forEach(button=>button.disabled=true);proposalOutput.textContent=decision==='accepted'?'↳ Adding the approved fact to the private vector store…':'↳ Rejecting the proposal. It will never enter the fact store…';try{const response=await fetch(`/api/proposals/${id}/review`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({decision,sensitivity})}),data=await response.json();if(!response.ok)throw Error(data.detail||'Review failed');proposalOutput.innerHTML=decision==='accepted'?`✓ proposal #${proposalEscape(data.proposal_id)} approved<br><span>Fact #${proposalEscape(data.accepted_fact_id)} is now private, local, and eligible for future access checks.</span>`:`✓ proposal #${proposalEscape(data.proposal_id)} rejected<br><span>It was not added to the fact store.</span>`;await loadProposalQueue();if(decision==='accepted'&&typeof renderFacts==='function'){renderFacts(await fetch('/api/facts').then(response=>response.json()))}}catch(error){proposalOutput.textContent=`× ${error.message}`;buttons.forEach(button=>button.disabled=false)}}
+loadProposalQueue().catch(error=>{proposalQueue.textContent=error.message});
+</script>
+"""
+
 
 @app.get("/", response_class=HTMLResponse)
 def demo() -> str:
-    return TERMINAL_HTML.replace("</main><style>", f"{PROTOCOL_DOCS}</main><style>", 1)
+    return TERMINAL_HTML.replace("</main><style>", f"{PROPOSAL_DEMO}{PROTOCOL_DOCS}</main><style>", 1)
 
 
 class QueryBody(BaseModel):
     agent_id: str
     request: str
+
+
+class ProposalBody(BaseModel):
+    agent_id: str
+    fact: str
+    soft_fact: str
+    suggested_category: str
+    source: str
+    confidence: float
+
+
+class ProposalReviewBody(BaseModel):
+    decision: str
+    sensitivity: str | None = None
 
 
 @app.get("/api/audit")
@@ -154,6 +202,45 @@ def proposals(status: str = "pending") -> list[dict]:
     if status not in {"pending", "accepted", "rejected"}:
         raise HTTPException(400, "status must be pending, accepted, or rejected")
     return store.list_memory_proposals(status)
+
+
+@app.post("/api/proposals")
+def propose_memory(body: ProposalBody) -> dict:
+    if not store.get_agent(body.agent_id):
+        raise HTTPException(404, f"Unknown agent: {body.agent_id}")
+    if body.source not in {"user_statement", "user_provided_record"}:
+        raise HTTPException(400, "source must be user_statement or user_provided_record")
+    if not 0 <= body.confidence <= 1:
+        raise HTTPException(400, "confidence must be between 0 and 1")
+    values = {
+        "fact": body.fact.strip(),
+        "soft_fact": body.soft_fact.strip(),
+        "suggested_category": body.suggested_category.strip().lower(),
+    }
+    if any(not value or len(value) > 2_000 for value in values.values()):
+        raise HTTPException(400, "fact, soft_fact, and suggested_category must contain 1 to 2,000 characters")
+    proposal = store.create_memory_proposal(
+        body.agent_id,
+        values["fact"],
+        values["soft_fact"],
+        values["suggested_category"],
+        body.source,
+        body.confidence,
+    )
+    return {"proposal_id": proposal["id"], "status": "pending_review"}
+
+
+@app.post("/api/proposals/{proposal_id}/review")
+def review_proposal(proposal_id: int, body: ProposalReviewBody) -> dict:
+    try:
+        proposal = store.review_memory_proposal(proposal_id, body.decision, body.sensitivity)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {
+        "proposal_id": proposal["id"],
+        "status": proposal["status"],
+        "accepted_fact_id": proposal["accepted_fact_id"],
+    }
 
 
 @app.post("/api/query")

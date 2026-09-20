@@ -12,6 +12,19 @@
       "env": {
         "N2K_AGENT_ID": "claude-health"
       }
+    },
+    "need2know-muse": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/quentinfennessy/src/need2know-codex-fast-prototype",
+        "run",
+        "need2know-mcp"
+      ],
+      "env": {
+        "N2K_AGENT_ID": "muse-travel"
+      }
     }
   }
 }
