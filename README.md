@@ -95,7 +95,7 @@ local stdio MCP servers through its MCP configuration; see the [official Codex
 MCP documentation](https://developers.openai.com/docs/extend/mcp).
 
 - `recall` receives a narrowly scoped task, applies the role-aware access decision, and writes the audit record to the same local SQLite file.
-- `propose_memory` stages a direct user statement or cited user-provided record for review. It requires a full fact, a safe alternative, category, source, and confidence. It cannot write to `facts` or `fact_vectors`; a proposal remains unretrievable until a human accepts it.
+- `propose_memory` requires a full fact, source, and confidence. The app uses the installed, authenticated Claude Sonnet client to derive its category and a short, privacy-minimized statement. This sends the proposed fact to Claude with tools disabled. Generation failures create no proposal. Both generated fields appear in the review queue; the proposal remains unretrievable until a human accepts it.
 - The local dashboard’s review queue lets the user approve a proposal with a chosen sensitivity (`low`, `medium`, or `high`) or reject it. Approval atomically creates the canonical fact and its sqlite-vec entry, marks the proposal `accepted`, and records the accepted fact ID. Rejection records `rejected` and never creates a fact.
 
 Example proposal:
@@ -103,8 +103,6 @@ Example proposal:
 ```json
 {
   "fact": "Alex prefers aisle seats near the front.",
-  "soft_fact": "Choose an aisle seat near the front.",
-  "suggested_category": "travel",
   "source": "user_statement",
   "confidence": 1.0
 }

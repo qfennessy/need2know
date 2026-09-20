@@ -4,6 +4,7 @@ from fastmcp import FastMCP
 
 from .config import Settings
 from .service import make_store, query
+from .soften import generate_memory_metadata
 
 settings = Settings.from_env()
 store = make_store(settings)
@@ -30,8 +31,6 @@ async def recall(request: str, max_memories: int = 8) -> dict:
 @mcp.tool
 def propose_memory(
     fact: str,
-    soft_fact: str,
-    suggested_category: str,
     source: str,
     confidence: float,
 ) -> dict:
@@ -46,20 +45,22 @@ def propose_memory(
         raise ValueError("source must be 'user_statement' or 'user_provided_record'; inferences cannot be stored")
     if not (0 <= confidence <= 1):
         raise ValueError("confidence must be between 0 and 1")
-    for label, value in (("fact", fact), ("soft_fact", soft_fact), ("suggested_category", suggested_category)):
+    for label, value in (("fact", fact),):
         if not value.strip() or len(value) > 2_000:
             raise ValueError(f"{label} must contain 1 to 2,000 characters")
+    metadata = generate_memory_metadata(fact)
     proposal = store.create_memory_proposal(
         settings.agent_id,
         fact.strip(),
-        soft_fact.strip(),
-        suggested_category.strip().lower(),
+        metadata["soft_fact"],
+        metadata["category"],
         source,
         confidence,
     )
     return {
         "proposal_id": proposal["id"],
         "status": "pending_review",
+        **metadata,
         "message": "Proposed fact is not saved or retrievable until the user reviews it.",
     }
 

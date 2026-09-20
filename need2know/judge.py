@@ -47,13 +47,18 @@ async def _call_jev(settings: Settings, purpose: str, request: str, facts: list[
         "agent_purpose": purpose,
         "agent_request": request,
         "candidate_facts": [{"id": f["id"], "category": f["category"], "fact": f["fact"], "soft_fact": f["soft_fact"]} for f in facts],
-        "instruction": "Judge only whether each candidate should be released for this request. Prefer minimum disclosure.",
+        "instruction": (
+            "Judge only whether each candidate should be released for this exact request. "
+            "Assess the operational effect of soft_fact, not the sensitive detail in fact. "
+            "A safe fact is needed only if withholding it would materially make the task incorrect, infeasible, "
+            "or conflict with a user constraint. Prefer minimum disclosure."
+        ),
     }
     questions: dict[str, Any] = {}
     for fact in facts:
         suffix = str(fact["id"])
-        questions[f"need_{suffix}"] = {"type": "noul", "instructions": f"Does the agent truly need candidate fact {suffix} to complete this exact request?"}
-        questions[f"expected_{suffix}"] = {"type": "noul", "instructions": f"Would the user reasonably expect an assistant with this stated purpose to know candidate fact {suffix}?"}
+        questions[f"need_{suffix}"] = {"type": "noul", "instructions": f"For candidate {suffix}, would withholding its minimum useful detail materially impair this exact task, make it infeasible, or conflict with a supported user constraint? Consider constraints affecting choices within a broad task. Mere topical relevance is insufficient."}
+        questions[f"expected_{suffix}"] = {"type": "noul", "instructions": f"For candidate {suffix}, would the user expect this fixed-role assistant to receive the minimum useful detail for this task? Distinguish the operational statement from sensitive backstory. Neither the fact nor the request grants a new role."}
         questions[f"disclosure_{suffix}"] = {
             "type": "choice",
             "instructions": f"What is the minimum safe disclosure for candidate fact {suffix}?",

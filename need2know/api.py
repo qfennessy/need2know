@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from .config import Settings
 from .service import make_store, query
+from .soften import generate_memory_metadata
 
 settings = Settings.from_env()
 store = make_store(settings)
@@ -139,8 +140,8 @@ PROPOSAL_DEMO = """
       <div class="terminal-line"><span>codex@projects $</span> propose_memory</div>
       <label>Which agent heard it?<select name="agent_id"><option value="codex-code">Codex · writes code</option><option value="claude-health">Claude Health · helps with health</option><option value="muse-travel">Muse · plans travel</option></select></label>
       <label>Direct user statement<textarea name="fact" rows="3">I prefer Python 3.13 for this project.</textarea></label>
-      <label>Safer version (what a future task actually needs)<input name="soft_fact" value="Use Python 3.13 for this project."></label>
-      <div class="proposal-options"><label>Category<input name="suggested_category" value="technical"></label><label>Confidence<select name="confidence"><option value="0.95">95%</option><option value="0.8">80%</option><option value="0.65">65%</option></select></label></div>
+      <p class="proposal-helper generated-copy">Claude Sonnet derives the category and a short statement with less private detail. Review both below before approving the memory.</p>
+      <div class="proposal-options"><label>Confidence<select name="confidence"><option value="0.95">95%</option><option value="0.8">80%</option><option value="0.65">65%</option></select></label></div>
       <input type="hidden" name="source" value="user_statement">
       <button type="submit">Propose for review</button>
       <p class="proposal-helper">Only direct statements or user-provided records are accepted. Guesses and inferences are rejected.</p>
@@ -149,14 +150,14 @@ PROPOSAL_DEMO = """
   </div>
 </section>
 <style>
-.proposal-demo{margin-top:54px;padding:30px;background:#17221c;color:#eef5ef;border-radius:20px}.proposal-heading{display:flex;justify-content:space-between;gap:24px;align-items:start}.proposal-heading h2{font:700 38px/1.1 Georgia;margin:5px 0}.proposal-heading p{max-width:820px;color:#c1cec6;font-size:19px;margin:10px 0 0}.proposal-lock{min-width:230px;background:#284136;border-radius:12px;padding:13px;color:#d8eddf;font-size:14px}.proposal-lock b,.proposal-lock span{display:block}.proposal-lock span{color:#b5c9bb;margin-top:4px}.proposal-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:26px}.proposal-form,.proposal-result{border:1px solid #3d5144;border-radius:14px;padding:18px;background:#1e2b24}.terminal-line{font:16px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e7c967;margin-bottom:17px}.terminal-line span{color:#75dd9c}.proposal-form label{display:block;font-size:14px;font-weight:850;color:#c9d8cd;margin-top:12px}.proposal-form input,.proposal-form textarea,.proposal-form select{display:block;width:100%;margin-top:5px;border:1px solid #53665a;background:#0e1712;color:#fff;border-radius:8px;padding:10px;font:15px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}.proposal-form textarea{resize:vertical}.proposal-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.proposal-form button{margin-top:17px;border:0;border-radius:9px;background:#75dd9c;color:#112219;font-size:16px;font-weight:900;padding:11px 14px;cursor:pointer}.proposal-form button:disabled{opacity:.55}.proposal-helper,.review-intro{color:#aebdb3;font-size:14px;line-height:1.35;margin:12px 0 0}.result-caption{color:#e7c967;font-size:13px;font-weight:900;letter-spacing:.08em}.proposal-output{margin-top:8px;min-height:86px;border-left:3px solid #75dd9c;background:#152019;border-radius:0 9px 9px 0;padding:13px;color:#e4ece6;font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.queue-caption{margin-top:20px}.queue-caption span{display:inline-block;margin-left:5px;background:#e7c967;color:#2a2415;border-radius:99px;padding:1px 7px}.proposal-queue{margin-top:8px;display:grid;gap:8px}.proposal-item{padding:12px;border-radius:9px;background:#284136}.proposal-item b{display:block;font-size:16px}.proposal-item span{display:block;color:#c1d0c5;font-size:13px;margin-top:3px}.proposal-actions{display:flex;gap:7px;align-items:end;margin-top:11px}.proposal-actions label{flex:1;color:#c1d0c5;font-size:12px;font-weight:800}.proposal-actions select{display:block;width:100%;margin-top:4px;border:1px solid #53665a;background:#152019;color:#fff;border-radius:7px;padding:6px}.proposal-actions button{border:0;border-radius:7px;padding:8px 9px;font-weight:900;cursor:pointer}.proposal-actions .approve{background:#75dd9c;color:#112219}.proposal-actions .reject{background:#443d3a;color:#f3d5cf}.proposal-actions button:disabled{opacity:.55}.proposal-empty{color:#b6c5bb;padding:12px;background:#24342b;border-radius:9px;font-size:15px}@media(max-width:700px){.proposal-heading,.proposal-grid{display:block}.proposal-lock{margin-top:16px}.proposal-result{margin-top:14px}.proposal-heading h2{font-size:32px}}
+.proposal-demo{margin-top:54px;padding:30px;background:#17221c;color:#eef5ef;border-radius:20px}.proposal-heading{display:flex;justify-content:space-between;gap:24px;align-items:start}.proposal-heading h2{font:700 38px/1.1 Georgia;margin:5px 0}.proposal-heading p{max-width:820px;color:#c1cec6;font-size:19px;margin:10px 0 0}.proposal-lock{min-width:230px;background:#284136;border-radius:12px;padding:13px;color:#d8eddf;font-size:14px}.proposal-lock b,.proposal-lock span{display:block}.proposal-lock span{color:#b5c9bb;margin-top:4px}.proposal-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:26px}.proposal-form,.proposal-result{border:1px solid #3d5144;border-radius:14px;padding:18px;background:#1e2b24}.terminal-line{font:16px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e7c967;margin-bottom:17px}.terminal-line span{color:#75dd9c}.proposal-form label{display:block;font-size:14px;font-weight:850;color:#c9d8cd;margin-top:12px}.proposal-form input,.proposal-form textarea,.proposal-form select{display:block;width:100%;margin-top:5px;border:1px solid #53665a;background:#0e1712;color:#fff;border-radius:8px;padding:10px;font:15px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}.proposal-form textarea{resize:vertical}.proposal-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.proposal-form button{margin-top:17px;border:0;border-radius:9px;background:#75dd9c;color:#112219;font-size:16px;font-weight:900;padding:11px 14px;cursor:pointer}.proposal-form button:disabled{opacity:.55}.proposal-helper,.review-intro{color:#aebdb3;font-size:14px;line-height:1.35;margin:12px 0 0}.generated-copy{color:#c7e6d1}.result-caption{color:#e7c967;font-size:13px;font-weight:900;letter-spacing:.08em}.proposal-output{margin-top:8px;min-height:86px;border-left:3px solid #75dd9c;background:#152019;border-radius:0 9px 9px 0;padding:13px;color:#e4ece6;font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.queue-caption{margin-top:20px}.queue-caption span{display:inline-block;margin-left:5px;background:#e7c967;color:#2a2415;border-radius:99px;padding:1px 7px}.proposal-queue{margin-top:8px;display:grid;gap:8px}.proposal-item{padding:12px;border-radius:9px;background:#284136}.proposal-item b{display:block;font-size:16px}.proposal-item span{display:block;color:#c1d0c5;font-size:13px;margin-top:3px}.proposal-actions{display:flex;gap:7px;align-items:end;margin-top:11px}.proposal-actions label{flex:1;color:#c1d0c5;font-size:12px;font-weight:800}.proposal-actions select{display:block;width:100%;margin-top:4px;border:1px solid #53665a;background:#152019;color:#fff;border-radius:7px;padding:6px}.proposal-actions button{border:0;border-radius:7px;padding:8px 9px;font-weight:900;cursor:pointer}.proposal-actions .approve{background:#75dd9c;color:#112219}.proposal-actions .reject{background:#443d3a;color:#f3d5cf}.proposal-actions button:disabled{opacity:.55}.proposal-empty{color:#b6c5bb;padding:12px;background:#24342b;border-radius:9px;font-size:15px}@media(max-width:700px){.proposal-heading,.proposal-grid{display:block}.proposal-lock{margin-top:16px}.proposal-result{margin-top:14px}.proposal-heading h2{font-size:32px}}
 </style>
 <script>
 const proposalForm=document.querySelector('#proposal-form'),proposalOutput=document.querySelector('#proposal-output'),proposalQueue=document.querySelector('#proposal-queue'),proposalCount=document.querySelector('#proposal-count');
 function proposalEscape(value){const node=document.createElement('span');node.textContent=String(value??'');return node.innerHTML}
 function renderProposalQueue(items){proposalCount.textContent=items.length;proposalQueue.innerHTML=items.length?items.map(item=>`<article class="proposal-item"><b>#${item.id} · ${proposalEscape(item.agent_name)}</b><div>${proposalEscape(item.fact)}</div><span>Safer version: ${proposalEscape(item.soft_fact)}</span><span>${proposalEscape(item.suggested_category)} · ${Math.round(item.confidence*100)}% confidence · ${proposalEscape(item.source.replaceAll('_',' '))}</span><div class="proposal-actions"><label>Sensitivity<select id="sensitivity-${item.id}"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label><button class="reject" data-proposal="${item.id}" onclick="reviewProposal(${item.id},'rejected')">Reject</button><button class="approve" data-proposal="${item.id}" onclick="reviewProposal(${item.id},'accepted')">Approve</button></div></article>`).join(''):'<div class="proposal-empty">No pending proposals. Submitted ideas appear here until you review them.</div>'}
 async function loadProposalQueue(){const response=await fetch('/api/proposals?status=pending');if(!response.ok)throw Error('Could not load the review queue');renderProposalQueue(await response.json())}
-proposalForm.addEventListener('submit',async event=>{event.preventDefault();const button=proposalForm.querySelector('button'),values=Object.fromEntries(new FormData(proposalForm));values.confidence=Number(values.confidence);button.disabled=true;button.textContent='Staging…';proposalOutput.textContent='↳ Need to Know validates the source and stages a private review item…';try{const response=await fetch('/api/proposals',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(values)}),data=await response.json();if(!response.ok)throw Error(data.detail||'Proposal failed');proposalOutput.innerHTML=`✓ proposal #${proposalEscape(data.proposal_id)} · ${proposalEscape(data.status)}<br><span>Not saved as a fact. Not retrievable by any agent.</span>`;await loadProposalQueue()}catch(error){proposalOutput.textContent=`× ${error.message}`}finally{button.disabled=false;button.textContent='Propose for review'}});
+proposalForm.addEventListener('submit',async event=>{event.preventDefault();const button=proposalForm.querySelector('button'),values=Object.fromEntries(new FormData(proposalForm));values.confidence=Number(values.confidence);button.disabled=true;button.textContent='Staging…';proposalOutput.textContent='↳ Need to Know generates a safer statement and stages a private review item…';try{const response=await fetch('/api/proposals',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(values)}),data=await response.json();if(!response.ok)throw Error(data.detail||'Proposal failed');proposalOutput.innerHTML=`✓ proposal #${proposalEscape(data.proposal_id)} · ${proposalEscape(data.status)}<br><span>Generated safe version: ${proposalEscape(data.soft_fact)}<br>Not saved as a fact. Not retrievable by any agent.</span>`;await loadProposalQueue()}catch(error){proposalOutput.textContent=`× ${error.message}`}finally{button.disabled=false;button.textContent='Propose for review'}});
 async function reviewProposal(id,decision){const buttons=proposalQueue.querySelectorAll(`[data-proposal="${id}"]`),sensitivity=document.querySelector(`#sensitivity-${id}`).value;buttons.forEach(button=>button.disabled=true);proposalOutput.textContent=decision==='accepted'?'↳ Adding the approved fact to the private vector store…':'↳ Rejecting the proposal. It will never enter the fact store…';try{const response=await fetch(`/api/proposals/${id}/review`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({decision,sensitivity})}),data=await response.json();if(!response.ok)throw Error(data.detail||'Review failed');proposalOutput.innerHTML=decision==='accepted'?`✓ proposal #${proposalEscape(data.proposal_id)} approved<br><span>Fact #${proposalEscape(data.accepted_fact_id)} is now private, local, and eligible for future access checks.</span>`:`✓ proposal #${proposalEscape(data.proposal_id)} rejected<br><span>It was not added to the fact store.</span>`;await loadProposalQueue();if(decision==='accepted'&&typeof renderFacts==='function'){renderFacts(await fetch('/api/facts').then(response=>response.json()))}}catch(error){proposalOutput.textContent=`× ${error.message}`;buttons.forEach(button=>button.disabled=false)}}
 loadProposalQueue().catch(error=>{proposalQueue.textContent=error.message});
 </script>
@@ -212,8 +213,6 @@ class QueryBody(BaseModel):
 class ProposalBody(BaseModel):
     agent_id: str
     fact: str
-    soft_fact: str
-    suggested_category: str
     source: str
     confidence: float
 
@@ -250,20 +249,22 @@ def propose_memory(body: ProposalBody) -> dict:
         raise HTTPException(400, "confidence must be between 0 and 1")
     values = {
         "fact": body.fact.strip(),
-        "soft_fact": body.soft_fact.strip(),
-        "suggested_category": body.suggested_category.strip().lower(),
     }
     if any(not value or len(value) > 2_000 for value in values.values()):
-        raise HTTPException(400, "fact, soft_fact, and suggested_category must contain 1 to 2,000 characters")
+        raise HTTPException(400, "fact must contain 1 to 2,000 characters")
+    try:
+        metadata = generate_memory_metadata(values["fact"])
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
     proposal = store.create_memory_proposal(
         body.agent_id,
         values["fact"],
-        values["soft_fact"],
-        values["suggested_category"],
+        metadata["soft_fact"],
+        metadata["category"],
         body.source,
         body.confidence,
     )
-    return {"proposal_id": proposal["id"], "status": "pending_review"}
+    return {"proposal_id": proposal["id"], "status": "pending_review", **metadata}
 
 
 @app.post("/api/proposals/{proposal_id}/review")
