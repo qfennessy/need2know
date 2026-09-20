@@ -27,6 +27,7 @@ async def query(settings: Settings, store: Store, agent_id: str, request: str, l
     return {
         "query_id": query_id,
         "agent": {"id": agent_id, "purpose": agent["purpose"]},
+        "request": request,
         "memories": released,
         "candidate_count": len(candidates),
         "withheld_count": len(candidates) - len(released),
