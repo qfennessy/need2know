@@ -31,6 +31,15 @@ this does not evaluate Sonnet generation or an actual MCP client connection.
 
 ## Reading results
 
+The terminal and `report.txt` include every failing fact check: question, fixed
+role, original and softer text, expected and actual disclosure, released text,
+audit ID, role score, and separate full/soft thresholds. The diagnosis identifies
+the recorded blocking gate or an inappropriate release. A comparison with the
+other retrieval mode helps distinguish a search miss from a judgment mismatch;
+it is not proof of causation because those calls have different context. No
+hidden model reasoning is inferred. Detailed findings remain in runtime reports,
+not committed repository files.
+
 With `--verbose`, each verdict line shows repeat number, case, agent, retrieval mode, API status,
 and `PASS` or `FAIL` with mismatch counts. `api=ok` only means Jev responded;
 the separate verdict evaluates the actual disclosures against the fixture.

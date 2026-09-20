@@ -6,13 +6,14 @@ import asyncio
 import csv
 import json
 import time
+import textwrap
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 from tempfile import mkdtemp
 
 from need2know.config import Settings
-from need2know.judge import judge
+from need2know.judge import judge, NEED_THRESHOLD, EXPECTED_THRESHOLD
 from need2know.service import make_store, query
 
 # Expectations are a reviewable evaluation oracle, not production access rules.
@@ -68,6 +69,70 @@ CASES = [
         "operations": {"founder": ["soft"], "spouse": ["soft"], "delivery": ["soft", "full"]}}),
     ("unrelated", "Write a haiku about clouds.", {}),
 ]
+
+
+def failure_details(rows):
+    """Explain recorded gates, without pretending scores explain model reasoning."""
+    facts = {fact[0]: fact for fact in FACTS}
+    lookup = {(r['repeat'], r['case'], r['agent'], r['mode'], r['fact']): r for r in rows}
+    labels = {'full': 'share the exact fact', 'soft': 'share only the softer statement',
+              'withhold': 'keep private', 'not_retrieved': 'not found by search'}
+    lines = ['', 'FAILURE DETAILS',
+             'Diagnoses below describe observed gates, not the model\'s hidden reasoning.']
+    failures = [r for r in rows if r['failure']]
+    if not failures:
+        return lines + ['No mismatches found.']
+    def add(label, value):
+        lines.extend(textwrap.wrap(f'{label}: {value}', width=96,
+                                   initial_indent='  ', subsequent_indent='    '))
+    for number, row in enumerate(failures, 1):
+        lines.extend(['', f'{number}. {row["case"]} / {row["agent"]} / {row["mode"]} / repeat {row["repeat"]}'])
+        add('Question', row['question'])
+        add('Assigned role', row['purpose'])
+        add('Fact', facts[row['fact']][2])
+        add('Softer statement', facts[row['fact']][3])
+        add('Expected', ' OR '.join(labels[x] for x in row['expected'].split('|')))
+        add('Actual', labels[row['actual']])
+        add('Released text', row['released_text'] or '(nothing)')
+        add('Audit', f'query #{row["query_id"]} in this run\'s audit.db')
+        try:
+            gates = json.loads(row['rationale'] or '{}')
+        except (ValueError, TypeError):
+            gates = {}
+        if not isinstance(gates, dict):
+            gates = {}
+        if 'role_scope' in gates:
+            add('Role check', f'{gates["role_scope"]:.0%}; requires {EXPECTED_THRESHOLD:.0%}')
+        for variant, scores in gates.get('variant_scores', {}).items():
+            add(f'{variant.capitalize()} text checks',
+                f'needed {scores[0]:.0%} (requires {NEED_THRESHOLD:.0%}); '
+                f'expected access {scores[1]:.0%} (requires {EXPECTED_THRESHOLD:.0%})')
+        if row['failure'] == 'judge_error':
+            diagnosis = f'The judge request failed ({row["status"]}); this is not a successful privacy decision. {row["rationale"] or "No decision recorded for this fact."}'
+        elif row['failure'] == 'retrieval_miss':
+            diagnosis = 'Search excluded a required fact, so Jev could not decide whether to share it.'
+        elif row['failure'] in {'unexpected_release', 'over_disclosure'}:
+            diagnosis = ('The selected text passed the release gates, but the scenario expects less disclosure. '
+                         'Review the role/access scores and the scenario expectation; this is a judgment mismatch, not a search miss.')
+        else:
+            reasons = []
+            if gates.get('role_scope', 1) < EXPECTED_THRESHOLD:
+                reasons.append('the role check failed')
+            if row['need'] is not None and row['need'] < NEED_THRESHOLD:
+                reasons.append('the need score was below the cutoff')
+            if row['expected_access'] is not None and row['expected_access'] < EXPECTED_THRESHOLD:
+                reasons.append('the expected-access score was below the cutoff')
+            if gates.get('judge_choice') == 'withhold':
+                reasons.append('Jev chose to withhold')
+            diagnosis = 'Jev saw the required fact but withheld it: ' + ('; '.join(reasons) or 'see recorded rationale') + '.'
+        add('Diagnosis', diagnosis)
+        other_mode = 'all-facts' if row['mode'] == 'retrieval' else 'retrieval'
+        other = lookup.get((row['repeat'], row['case'], row['agent'], other_mode, row['fact']))
+        if other:
+            add('Comparison', f'{other_mode}: {labels[other["actual"]]}; '
+                f'{"matches expectation" if not other["failure"] else "also fails expectation"}. '
+                'These are separate calls with different candidate context.')
+    return lines
 
 
 async def run(args):
@@ -179,6 +244,7 @@ async def run(args):
     lines.extend(["", f"Requests that failed: {error_calls}.",
                   "Results are compared with the expected answers in the test scenarios.",
                   "See matrix.csv and results.json for each question, agent, and fact.", ""])
+    lines.extend(failure_details(rows))
     summary = '\n'.join(lines)
     (directory / 'report.txt').write_text(summary)
     print(summary)
