@@ -44,6 +44,7 @@ def seed(store: Store, reset: bool = False) -> None:
         with store.connect() as db:
             db.execute("DELETE FROM decisions")
             db.execute("DELETE FROM queries")
+            db.execute("DELETE FROM memory_proposals")
             if store.vec_enabled:
                 db.execute("DELETE FROM fact_vectors")
             db.execute("DELETE FROM facts")

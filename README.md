@@ -47,13 +47,13 @@ claude mcp get need2know-claude
 claude
 ```
 
-The same project `.mcp.json` also configures Muse Code as `need2know-muse`, with the fixed `muse-travel` identity. Start a new Muse session from this trusted workspace so it loads the configuration:
+Muse Code uses a client-specific user configuration instead of the shared project `.mcp.json`, so Claude never receives a travel-role server and Muse never receives a health-role server. Its `need2know-muse` entry uses the fixed `muse-travel` identity. Start a new Muse session after adding that entry:
 
 ```bash
 muse --trust-workspace
 ```
 
-`MUSE_API_KEY` authenticates Muse Code's model provider; it is not passed to Need to Know. Need to Know loads only its own local Jev key from `.env`.
+`MUSE_API_KEY` authenticates Muse Code's model provider; it is not passed to Need to Know. Need to Know loads only its own local Jev key from `.env`. The dashboard’s review actions are also cleared by `need2know seed --reset`, along with the facts they may have created.
 
 The server exposes `identity`, `recall`, and `propose_memory`.
 
