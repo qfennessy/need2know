@@ -47,10 +47,19 @@ claude mcp get need2know-claude
 claude
 ```
 
+Muse Code uses a client-specific user configuration instead of the shared project `.mcp.json`, so Claude never receives a travel-role server and Muse never receives a health-role server. Its `need2know-muse` entry uses the fixed `muse-travel` identity. Start a new Muse session after adding that entry:
+
+```bash
+muse --trust-workspace
+```
+
+`MUSE_API_KEY` authenticates Muse Code's model provider; it is not passed to Need to Know. Need to Know loads only its own local Jev key from `.env`. The dashboard’s review actions are also cleared by `need2know seed --reset`, along with the facts they may have created.
+
 The server exposes `identity`, `recall`, and `propose_memory`.
 
 - `recall` receives a narrowly scoped task, applies the role-aware access decision, and writes the audit record to the same local SQLite file.
 - `propose_memory` stages a direct user statement or cited user-provided record for review. It requires a full fact, a safe alternative, category, source, and confidence. It cannot write to `facts` or `fact_vectors`; a proposal remains unretrievable until a human accepts it.
+- The local dashboard’s review queue lets the user approve a proposal with a chosen sensitivity (`low`, `medium`, or `high`) or reject it. Approval atomically creates the canonical fact and its sqlite-vec entry, marks the proposal `accepted`, and records the accepted fact ID. Rejection records `rejected` and never creates a fact.
 
 Example proposal:
 

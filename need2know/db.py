@@ -219,3 +219,42 @@ class Store:
                 (status,),
             ).fetchall()
             return [dict(row) for row in rows]
+
+    def review_memory_proposal(
+        self, proposal_id: int, decision: str, sensitivity: str | None = None
+    ) -> dict[str, Any]:
+        if decision not in {"accepted", "rejected"}:
+            raise ValueError("decision must be accepted or rejected")
+        if decision == "accepted" and sensitivity not in {"low", "medium", "high"}:
+            raise ValueError("accepted proposals need a low, medium, or high sensitivity")
+        with self.connect() as db:
+            proposal = db.execute("SELECT * FROM memory_proposals WHERE id=?", (proposal_id,)).fetchone()
+            if not proposal:
+                raise ValueError(f"Unknown proposal: {proposal_id}")
+            if proposal["status"] != "pending":
+                raise ValueError(f"Proposal {proposal_id} has already been {proposal['status']}")
+
+            accepted_fact_id = None
+            if decision == "accepted":
+                keywords = sorted({
+                    proposal["suggested_category"].lower(),
+                    *[word.strip(".,;:!?()[]{}'\"").lower() for word in proposal["fact"].split() if len(word) > 2],
+                })
+                vector = self.embedder.embed(
+                    " ".join([proposal["suggested_category"], proposal["fact"], *keywords])
+                ).astype(np.float32)
+                cursor = db.execute(
+                    "INSERT INTO facts(category,fact,soft_fact,sensitivity,keywords,embedding,created_at) VALUES(?,?,?,?,?,?,?)",
+                    (proposal["suggested_category"], proposal["fact"], proposal["soft_fact"], sensitivity,
+                     json.dumps(keywords), vector.tobytes(), utcnow()),
+                )
+                accepted_fact_id = int(cursor.lastrowid)
+                if self.vec_enabled:
+                    db.execute("INSERT INTO fact_vectors(fact_id, embedding) VALUES (?, ?)", (accepted_fact_id, vector))
+
+            db.execute(
+                "UPDATE memory_proposals SET status=?, reviewed_at=?, accepted_fact_id=? WHERE id=?",
+                (decision, utcnow(), accepted_fact_id, proposal_id),
+            )
+            reviewed = db.execute("SELECT * FROM memory_proposals WHERE id=?", (proposal_id,)).fetchone()
+            return dict(reviewed)
