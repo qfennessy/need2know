@@ -145,6 +145,21 @@ class Store:
                     vector = np.frombuffer(item["embedding"], dtype=np.float32)
                     item["distance"] = float(1 - np.dot(query, vector))
                     items.append(item)
+            # Search the softer representation independently, then merge by fact ID.
+            # Embeddings are locally cached by LocalEmbedder; no database migration
+            # is needed and newly approved facts participate immediately.
+            soft_items = []
+            for row in db.execute("SELECT * FROM facts"):
+                item = dict(row)
+                vector = self.embedder.embed(item["soft_fact"]).astype(np.float32)
+                item["distance"] = float(1 - np.dot(query, vector))
+                soft_items.append(item)
+            merged = {item["id"]: item for item in items}
+            for item in sorted(soft_items, key=lambda x: x["distance"])[:min(limit * 2, 30)]:
+                previous = merged.get(item["id"])
+                if previous is None or item["distance"] < previous["distance"]:
+                    merged[item["id"]] = item
+            items = list(merged.values())
         for item in items:
             keyword_overlap = len(words & set(json.loads(item["keywords"])))
             item["retrieval_score"] = (1 - float(item["distance"])) + keyword_overlap * 0.15

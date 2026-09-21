@@ -1,4 +1,18 @@
-# Recorded evaluation baseline
+# Current evaluation baseline
+
+The user selected the latest revised `scoped-v2` run as the new baseline on
+September 20, 2026. Use normal retrieval only for headline comparisons:
+
+- F1: **72.2%** (26/36).
+- Precision: **92.9%** (13/14).
+- Recall: **59.1%** (13/22).
+
+Source run: `need2know-eval-gll4mq62`. See
+[run details](evaluation-rerun-2026-09-20.md). This is one live Jev run, not a
+stability estimate. Keep scoped-v2 facts, roles, questions and expected outcomes
+fixed for future comparisons; version any subsequent fixture changes separately.
+
+## Historical baseline (superseded)
 
 Recorded September 20, 2026 from the existing live run `need2know-eval-u46_uo94`.
 This is an archived measurement, not a new run or a guarantee of current behavior.

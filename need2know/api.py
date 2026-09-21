@@ -68,6 +68,38 @@ TERMINAL_HTML = """<!doctype html>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#eee9df;color:#17221c;font:18px/1.5 ui-sans-serif,system-ui}main{max-width:1420px;margin:auto;padding:38px 28px 70px}.eyebrow{font-size:13px;font-weight:900;letter-spacing:.14em;color:#286248}.top{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:7px 0 28px}h1{font:700 57px/1 Georgia;margin:0;letter-spacing:-1.5px}.subtitle{max-width:680px;color:#58665d;font-size:21px;margin:12px 0 0}.store{background:#17221c;color:#fff;border-radius:18px;padding:16px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}.store b{font-size:18px}.store span{font-size:15px;color:#c1cec6}.dot{width:10px;height:10px;border-radius:50%;background:#72d49c;box-shadow:0 0 0 4px #72d49c33}.explain{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:13px;background:#fff;border:1px solid #d8d3c9;border-radius:18px;padding:17px 20px;margin-bottom:25px}.explain b{display:block;font-size:17px}.explain span{color:#637067;font-size:15px}.arrow{font-size:25px;color:#799080}.terminal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.terminal{background:#152019;border:1px solid #33453a;border-radius:19px;overflow:hidden;box-shadow:0 8px 24px #15201922;min-height:620px}.terminal-head{background:#24342b;padding:13px 15px;display:flex;align-items:center;gap:8px;color:#e8eee9;font-size:15px;font-weight:800}.lights{display:flex;gap:5px;margin-right:4px}.light{width:10px;height:10px;border-radius:50%;background:#e26d61}.light:nth-child(2){background:#e5c763}.light:nth-child(3){background:#70bd83}.terminal-body{padding:21px;color:#dce6df}.agent-label{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:15px}.agent-label h2{font:700 28px/1 Georgia;color:#fff;margin:0}.role{background:#284136;color:#c7e6d1;padding:8px 10px;border-radius:9px;font-size:14px;line-height:1.35;margin-bottom:18px}.role b{display:block;color:#fff}.test-label{font-size:13px;font-weight:900;letter-spacing:.08em;color:#bdcbc2;margin:0 0 7px}.test-entry{display:flex;gap:8px}.test-entry input{min-width:0;flex:1;border:1px solid #53665a;background:#0e1712;color:#fff;border-radius:9px;padding:10px;font:14px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}.test-entry button{border:0;border-radius:9px;background:#75dd9c;color:#112219;font-weight:900;padding:9px 11px;cursor:pointer}.test-entry button:disabled{opacity:.55}.command{font:16px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#fff;margin:16px 0 12px}.prompt{color:#75dd9c}.mcp{color:#e6c66b}.reply{margin-top:18px;border-left:3px solid #75dd9c;background:#1e2b24;border-radius:0 10px 10px 0;padding:14px 15px;color:#f4f6f4;font-size:19px;font-weight:650;min-height:92px}.reply.private{border-color:#b8ada0;background:#2a2925;color:#e8e2db}.status{display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:5px 9px;font-size:12px;font-weight:900;letter-spacing:.04em;background:#234b35;color:#bce5c8}.status.waiting{background:#443d2b;color:#e9d18d}.status i{width:7px;height:7px;border-radius:50%;background:currentColor}.meta{margin-top:18px;padding-top:15px;border-top:1px solid #39483f;color:#9fac9f;font-size:14px}.note{margin-top:24px;color:#647067;font-size:16px}@media(max-width:980px){.terminal-grid{grid-template-columns:1fr}.explain{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}.top{display:block}}@media(max-width:600px){main{padding:25px 15px}h1{font-size:43px}.subtitle{font-size:19px}}
 </style></head><body><main><div class="eyebrow">NEED TO KNOW · SESSION WALL</div><div class="top"><div><h1>Three agents. One private door.</h1><p class="subtitle">Each terminal is a separate AI assistant. It has a fixed role, asks one temporary question, and receives only the minimum memory needed to answer it.</p></div></div>
+<section class="latest-scores" aria-labelledby="latest-scores-title">
+  <div class="eyebrow" id="latest-scores-title">LATEST RECORDED SCORE · ORIGINAL + SOFTER SEARCH · NORMAL RETRIEVAL</div>
+  <div class="score-cards">
+    <article><strong>77.8%</strong><b>F1</b><span>Balances precision and recall.</span></article>
+    <article><strong>100.0%</strong><b>Precision</b><span>Of everything shared, how much was allowed?</span></article>
+    <article><strong>63.6%</strong><b>Recall</b><span>Of everything needed, how much was shared correctly?</span></article>
+  </div>
+  <div class="baseline-table"><table>
+    <caption>Same scoped-v2 benchmark · normal retrieval only</caption>
+    <thead><tr><th>Metric</th><th>Revised baseline</th><th>Original + softer search</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><th>F1</th><td>72.2%</td><td>77.8%</td><td>+5.6 points</td></tr>
+      <tr><th>Precision</th><td>92.9%</td><td>100.0% · 14/14</td><td>+7.1 points</td></tr>
+      <tr><th>Recall</th><td>59.1%</td><td>63.6% · 14/22</td><td>+4.5 points</td></tr>
+    </tbody>
+  </table></div>
+  <p>Softer-search experiment: 104 live Jev requests, one repeat. Unauthorized releases: 1 → 0; needed facts withheld: 8 → 6; search misses: 1 → 2. No API errors. A better score in this run, not proof of stable improvement; search coverage worsened. Recorded run: need2know-eval-pxar6ljs.</p>
+  <p>Baseline set September 20, 2026 · scoped-v2 · one live Jev run. Future comparisons use these same benchmark expectations. Not a safety guarantee or a live measurement.</p>
+  <section aria-labelledby="next-improvements-title">
+    <h3 id="next-improvements-title">Three next improvements to evaluate</h3>
+    <p>Proposals only—not implemented or included in the scores above.</p>
+    <ol style="font-size:20px;line-height:1.55;display:grid;gap:16px;padding-left:28px">
+      <li><b>Retrieve prerequisites, not just similar words.</b> Expand the request into a few general information needs—preferences, constraints, dependencies, and authority needed to complete the task. Search those alongside the original question, merge duplicates, and still send at most eight facts to Jev. This may find important facts that use different language; expansion must not invent user facts or grant permission.</li>
+      <li><b>Protect candidate diversity.</b> Fuse original-text, softer-text, and independent keyword search rankings before selecting eight facts. Reduce near-duplicate candidates so one topic cannot crowd out another necessary constraint. Evaluate whether this recovers search misses without introducing more irrelevant disclosures.</li>
+      <li><b>Isolate permission from the request.</b> Give the permission judge only the fixed role and proposed disclosure text in a separate call—not the user’s request or other candidate facts. Then require both permission and task usefulness to pass. This makes the separation real rather than an instruction inside shared context; it adds latency and must not reduce useful recall.</li>
+    </ol>
+    <p>Evaluate each change separately on the frozen scoped-v2 normal-retrieval benchmark, with repeated runs. Report F1, precision, recall, unauthorized releases, search misses, and individual-request latency. Do not lower thresholds or relax expected outcomes to improve scores.</p>
+  </section>
+</section>
+<style>
+.latest-scores{background:#fff;border:1px solid #d8d3c9;border-radius:18px;padding:24px;margin-bottom:24px}.score-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:14px}.score-cards article{background:#edf4ef;border-radius:12px;padding:20px}.score-cards strong{display:block;font-size:46px;line-height:1.15;color:#174b38}.score-cards b{display:block;font-size:24px;margin:8px 0}.score-cards span{font-size:19px;color:#506057}.latest-scores p{font-size:15px;color:#59665e;margin:16px 0 0}@media(max-width:650px){.score-cards{grid-template-columns:1fr}}
+</style>
 <section class="store"><i class="dot"></i><b>One local memory store</b><span>SQLite + sqlite-vec · Jev (TypeSafe AI) decides what to share — schema-guaranteed scores, never free text · Claude Sonnet categorizes facts and creates softer versions · every decision is audited</span></section>
 <section class="explain"><div><b>1. Agent + role</b><span>Who is asking, and what job do they have?</span></div><div class="arrow">→</div><div><b>2. Test question</b><span>What does that agent need for this one task?</span></div><div class="arrow">→</div><div><b>3. Result</b><span>Jev chooses: exact fact, safer version, or nothing.</span></div></section>
 <section class="terminal-grid" id="sessions"><div class="terminal"><div class="terminal-head"><span class="lights"><i class="light"></i><i class="light"></i><i class="light"></i></span>Loading sessions…</div></div></section><p class="note">Claude, Codex, and Muse each have their own local MCP connection configuration. A “configured” badge means the tool is available to a new trusted client session; the audit log is the proof of a real memory request.</p><section class="facts"><div class="facts-head"><div><div class="eyebrow">LOCAL MEMORY STORE</div><h2>Everything saved here</h2><p>These are the exact private facts in your local Need to Know database. Assistants only receive a fact when the access check allows it.</p></div><span id="fact-count" class="fact-count">Loading…</span></div><div id="fact-list" class="fact-list"></div></section></main><style>.facts{margin-top:54px;background:#fff;border:1px solid #d8d3c9;border-radius:20px;padding:28px}.facts-head{display:flex;justify-content:space-between;gap:22px;align-items:start}.facts h2{font:700 36px/1.1 Georgia;margin:5px 0}.facts p{max-width:720px;color:#59665e;margin:8px 0 0}.fact-count{white-space:nowrap;background:#e1eee5;color:#1c593d;border-radius:999px;padding:8px 12px;font-size:15px;font-weight:900}.fact-list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}.fact{border:1px solid #e1ded6;border-radius:13px;padding:16px}.fact p{color:#17221c;font-weight:700;font-size:18px;line-height:1.35;margin:11px 0 9px}.fact small{display:block;color:#66736a;line-height:1.4}.fact-category,.fact-sensitivity{display:inline-block;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:900}.fact-category{background:#dceae3;color:#175139;text-transform:capitalize}.fact-sensitivity{background:#eeeae2;color:#665d53;margin-left:5px}@media(max-width:700px){.facts-head,.fact-list{display:block}.fact{margin-top:10px}.fact-count{display:inline-block;margin-top:15px}}</style>
@@ -84,12 +116,19 @@ async function load(){const [auditResponse,factResponse]=await Promise.all([fetc
 </script></body></html>"""
 
 PROTOCOL_DOCS = """
+<style>
+.protocol-docs .protocol-grid{grid-template-columns:minmax(0,1fr);gap:20px}
+.protocol-docs .protocol-grid article{min-width:0;padding:22px}
+.protocol-docs .protocol-grid h3{font-size:24px}
+.protocol-docs .protocol-grid p{font-size:19px}
+.protocol-docs .protocol-grid pre{font-size:17px;line-height:1.6;overflow-wrap:anywhere}
+</style>
 <section class="protocol-docs">
   <div class="eyebrow">IMPLEMENTATION NOTES</div>
   <h2>How agents call Need to Know</h2>
-  <p>Each agent runs the same local FastMCP service, but with a fixed <code>N2K_AGENT_ID</code>. Identity comes from the connection configuration—not from a prompt an agent can change.</p>
-  <div class="config"><b>Example configuration</b><pre>N2K_AGENT_ID=claude-health
-uv --directory . run need2know-mcp</pre></div>
+  <p>Each client launches the local FastMCP server with an <code>N2K_AGENT_ID</code>. The server looks up that agent’s registered role; recall cannot supply a different identity or role. This assumes trusted local configuration: it does not protect against a client that can edit the configuration or read the database directly.</p>
+  <div class="config"><b>Launch example (from the project directory, with muse-travel registered)</b><pre>N2K_AGENT_ID=muse-travel uv --directory . run need2know-mcp</pre></div>
+  <p>Illustrative excerpts below: request instructions are shortened and some fields are omitted. Scores are examples, not a live response. Candidate facts, including original private text, are sent to the remote Jev API.</p>
   <div class="protocol-grid">
     <article><h3>Tool input: <code>recall</code></h3><pre>{
   "request": "What restaurant accommodations do I need while traveling?",
@@ -100,28 +139,47 @@ uv --directory . run need2know-mcp</pre></div>
   "state": {
     "agent_purpose": "plans travel",
     "agent_request": "...",
-    "candidate_facts": ["relevant facts only"]
+    "candidate_facts": [{
+      "id": 5, "category": "health",
+      "fact": "Alex has a digestive condition and needs low-fiber food.",
+      "soft_fact": "Alex needs low-fiber food."
+    }]
   },
   "questions": {
-    "need_5": "Is this needed?",
-    "expected_5": "Is this role expected to know it?",
-    "disclosure_5": ["full", "soft", "withhold"]
+    "role_scope": {"type": "noul", "instructions": "Is the task within the assigned role?"},
+    "need_full_5": {"type": "noul", "instructions": "Is the exact fact needed?"},
+    "permission_full_5": {"type": "noul", "instructions": "Does the assigned role authorize every exact detail, independently of the request? Explicit restrictions override relevance."},
+    "expected_full_5": {"type": "noul", "instructions": "Is access to every exact detail expected?"},
+    "need_soft_5": {"type": "noul", "instructions": "Is the softer fact needed?"},
+    "permission_soft_5": {"type": "noul", "instructions": "Does the assigned role authorize the softer text, independently of the request? Explicit restrictions override relevance."},
+    "expected_soft_5": {"type": "noul", "instructions": "Is access to the softer text expected?"},
+    "disclosure_5": {
+      "type": "choice",
+      "instructions": "Choose the minimum justified disclosure.",
+      "criteria": {"full": "Exact fact necessary", "soft": "Softer text necessary", "withhold": "No disclosure"}
+    }
   }
 }</pre></article>
     <article><h3>Jev output → tool result</h3><pre>{
   "answers": {
-    "need_5": { "noul": 0.89 },
-    "expected_5": { "noul": 0.94 },
+    "role_scope": { "noul": 0.96 },
+    "need_full_5": { "noul": 0.40 },
+    "permission_full_5": { "noul": 0.15 },
+    "expected_full_5": { "noul": 0.20 },
+    "need_soft_5": { "noul": 0.89 },
+    "permission_soft_5": { "noul": 0.95 },
+    "expected_soft_5": { "noul": 0.94 },
     "disclosure_5": { "choice": "soft" }
   }
 }
 
 → { "memories": [{
+  "category": "health",
   "disclosure": "soft",
-  "memory": "Prioritize low-fiber food…"
-}] }</pre></article>
+  "memory": "Alex needs low-fiber food."
+}] }</pre><p>The tool also returns query_id, agent, request, candidate_count, withheld_count, and status. It does not return withheld facts or raw judge scores.</p></article>
   </div>
-  <div class="rule"><b>Fail-closed release rule:</b> need ≥ 55%, expected access ≥ 65%, and Jev must choose <code>full</code> or <code>soft</code>. A timeout, malformed response, or any error returns no memories.</div>
+  <div class="rule"><b>Code enforces the release gates:</b> role scope ≥ 65%, then permission ≥ 65%, need ≥ 55%, and expected access ≥ 65% for the selected text. Permission asks whether the assigned role authorizes this information, independently of what the request asks for. Being useful does not grant permission; explicit restrictions override topical relevance. Full and softer text are scored separately. If Jev chooses full but its scores fail, code tries the softer version’s gates. A withhold choice stays private. Jev call or parsing failures withhold every candidate; other service errors may fail the tool call. HTTP operations have a two-second timeout, not a guaranteed two-second end-to-end deadline.</div>
 </section>
 <style>
 .protocol-docs{margin-top:54px;padding:28px;background:#fff;border:1px solid #d8d3c9;border-radius:20px}
@@ -175,15 +233,28 @@ ADVERSARIAL_FLOW_DIAGRAM = """
     <span class="flow-arrow" aria-hidden="true">→</span>
     <article class="flow-box service"><span class="flow-kicker">THE DOOR</span><b>Need to Know service</b><small>Receives the request, not a new permission</small></article>
   </div>
-  <div class="flow-rail"><span>Private, local work happens here</span></div>
+  <div class="flow-rail"><span>Local storage and search → remote Jev decision</span></div>
   <div class="flow-stage local-stage">
-    <article class="flow-box database"><span class="flow-kicker">PRIVATE MEMORY</span><b>Local SQLite fact store</b><small>Facts remain on the user’s machine</small></article>
+    <article class="flow-box database"><span class="flow-kicker">PRIVATE MEMORY</span><b>Local SQLite fact store</b><small>The source database stays on the user’s machine</small></article>
     <span class="flow-arrow" aria-hidden="true">→</span>
     <article class="flow-box narrow"><span class="flow-kicker">SMALL LIST</span><b>Candidate narrowing</b><small>Local vector + keyword retrieval</small></article>
     <span class="flow-arrow" aria-hidden="true">→</span>
-    <article class="flow-box judge"><span class="flow-kicker">DECIDE</span><b>Disclosure judge</b><small>Checks need, expected access, and detail</small></article>
+    <article class="flow-box judge"><span class="flow-kicker">REMOTE DECISION</span><b>Jev disclosure judge</b><small>Receives shortlisted facts; checks permission, need, expected access, and detail</small></article>
   </div>
   <div class="judge-inputs" aria-label="Inputs sent to the disclosure judge"><span>Fixed role</span><span>Current request</span><span>Short candidate list</span></div>
+  <section aria-labelledby="search-title" style="margin:24px 0;padding:24px;background:#f0f5f1;border-radius:14px;font-size:20px;line-height:1.55">
+    <h3 id="search-title">How search chooses the shortlist</h3>
+    <p>Search asks “Which facts might help?” It does not grant access.</p>
+    <ol style="padding-left:28px;display:grid;gap:16px">
+      <li><b>Represent each fact as numbers.</b> A local embedding model converts the original fact, category, and keywords into a 256-number vector. Similar meanings should produce nearby vectors.</li>
+      <li><b>Represent the question the same way.</b> The same local model turns the request into a comparable vector.</li>
+      <li><b>Find nearby facts in both versions.</b> For the usual eight-fact limit, sqlite-vec retrieves up to 16 original-text candidates. A separate local vector search selects up to 16 softer statements. Merge duplicates, keeping each fact’s strongest similarity.</li>
+      <li><b>Boost keyword matches.</b> Each matching stored keyword adds 0.15 to the ranking score. This reorders the shortlist; it cannot bring back a fact outside it.</li>
+      <li><b>Send the top eight to Jev.</b> Jev evaluates disclosure using the role and request. Selecting a fact is not permission to share it with the assistant.</li>
+    </ol>
+    <p><b>Two evaluation modes:</b> Normal retrieval uses this shortlist. All-facts skips search and sends all 15 fictional benchmark facts to Jev, helping distinguish search misses from judgment failures.</p>
+    <p>Softer statements are embedded locally and cached in memory. This prototype scans their vectors; original vectors use sqlite-vec. Search uses the question, not the agent’s role. The final limit remains eight facts.</p>
+  </section>
   <div class="outcomes">
     <article class="outcome release"><div><span class="flow-kicker">IF JUSTIFIED</span><b>Release the minimum useful detail</b><p>Exact fact only when necessary; otherwise a safer task-specific version.</p></div><span class="outcome-arrow" aria-hidden="true">→</span><strong>Agent response</strong></article>
     <article class="outcome withhold"><div><span class="flow-kicker">IF NOT JUSTIFIED · OR ANY ERROR</span><b>Withhold</b><p>Nothing is released. A timeout or malformed result is also a withhold.</p></div><span class="outcome-arrow" aria-hidden="true">→</span><strong>Agent response</strong></article>
@@ -203,14 +274,14 @@ EVALUATION_DOCS = """
   <p>Keeping everything private is not enough. The evaluation checks both sides:
   useful facts must reach the right assistant, and unrelated or excessive detail must stay private.</p>
   <div class="eval-grid">
-    <article><h3>Same question, different roles</h3><p>11 questions × 8 agent roles × 15 fictional facts.
+    <article><h3>Same question, different roles</h3><p>The scoped-v2 benchmark has 13 questions × 8 agent roles × 15 fictional facts.
     Cases cover health preferences, travel, coding, confidential business matters, family finances,
     and requests that claim authority the agent does not have.</p></article>
     <article><h3>Two ways to find the problem</h3><p><b>Normal search:</b> Jev sees the eight retrieved facts.
     <br><b>Judge only:</b> Jev sees all 15 facts.
     <br>Comparing these helps distinguish a search miss from a disclosure mistake.</p></article>
     <article><h3>Your memories stay untouched</h3><p>Each run creates a separate temporary SQLite database
-    containing fictional fixtures. It uses live Jev by default and makes 176 requests,
+    containing fictional fixtures. It uses live Jev by default and makes 208 requests,
     four at a time. Repeating the run helps reveal inconsistent decisions.</p></article>
   </div>
   <h3>Run it from the project directory</h3>
@@ -246,6 +317,10 @@ uv run python scripts/evaluate_memory.py --case medication-role-boundary --repea
   Review ambiguous expectations before tuning the judge. These tests use prepared softer statements;
   they do not test Sonnet generation or a real MCP client session. Passing this matrix alone does not
   prove the system prevents every disclosure.</p>
+  <p>The original legacy-v1 benchmark remains available for comparisons. The new scoped-v2 version
+  clarifies whose records each role may access and adds two useful-answer follow-ups. An adversarial
+  request may be refused, but its safe follow-up must still receive the required useful facts.
+  Do not compare different benchmark versions as evidence of model improvement.</p>
   <p>General improvements should be checked on new people, roles, domains, and paraphrases.
   The current matrix is a starting point, not that full generalization test.</p></div>
 </section>
@@ -262,11 +337,67 @@ uv run python scripts/evaluate_memory.py --case medication-role-boundary --repea
 """
 
 
+BASELINE_DOCS = """
+<section class="eval-docs" aria-labelledby="baseline-title">
+  <div class="eyebrow">RECORDED BASELINE · SEPTEMBER 20, 2026</div>
+  <h2 id="baseline-title">Our starting score—not a safety guarantee.</h2>
+  <div class="eval-limit"><b>Latest live rerun · September 20, 2026</b>
+  <p><b>Original benchmark, unchanged expectations:</b> normal-search precision 62.5% (5/8), up 12.5 percentage points from baseline; recall 22.7% (5/22), down 18.2 points. All-facts precision 50.0% (7/14), up 9.4 points; recall 31.8% (7/22), down 27.3 points. Unauthorized releases: 3 / 7. Fewer leaks, but more useful facts withheld—not an overall improvement.</p>
+  <p><b>Revised scoped-v2 benchmark:</b> normal-search precision 92.9% (13/14), recall 59.1% (13/22). All-facts precision 93.8% (15/16), recall 68.2% (15/22). Compared with its previous run, only all-facts precision changed: up 5.5 percentage points. Unauthorized releases: 1 / 1. Do not compare these changed fixtures directly with the original baseline.</p>
+  <p>Precision: how much of what was shared was allowed. Recall: how much required information was shared correctly. Both runs used live Jev, one repeat, and had zero API errors. No judge changes between these two rounds: variation is not evidence of improvement. Original archived scores remain below.</p></div>
+  <p>In normal retrieval, half of the shared facts were allowed, and only about four in ten
+  needed facts were shared correctly. Both precision and recall need to improve.</p>
+  <div class="baseline-table" role="region" aria-label="Recorded evaluation scores" tabindex="0">
+  <table>
+    <caption>Archived legacy-v1 run: 176 live Jev requests, 11 questions, 8 roles, 15 facts, one repeat.</caption>
+    <thead><tr><th scope="col">Metric</th><th scope="col">Normal retrieval</th>
+    <th scope="col">All facts given to Jev</th><th scope="col">What it means</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Release precision</th><td>50.0% · 9/18</td><td>40.6% · 13/32</td>
+      <td>Of everything shared, how much was allowed? Higher is better.</td></tr>
+      <tr><th scope="row">Release recall</th><td>40.9% · 9/22</td><td>59.1% · 13/22</td>
+      <td>Of everything needed, how much was shared correctly? Higher is better.</td></tr>
+      <tr><th scope="row">Unauthorized releases</th><td>9</td><td>19</td>
+      <td>Facts shared when the benchmark expected privacy. Lower is better.</td></tr>
+      <tr><th scope="row">Needed facts withheld</th><td>10</td><td>9</td>
+      <td>Jev saw a needed fact but did not share it. Lower is better.</td></tr>
+      <tr><th scope="row">Needed facts missed by search</th><td>3</td><td>Not applicable</td>
+      <td>A needed fact never reached Jev. Lower is better.</td></tr>
+      <tr><th scope="row">Excess-detail failures</th><td>0</td><td>0</td>
+      <td>Exact text shared when only softer text was allowed. Lower is better.</td></tr>
+      <tr><th scope="row">Failed API calls</th><td>0</td><td>0</td>
+      <td>Requests that could not be judged successfully.</td></tr>
+      <tr><th scope="row">Completely correct requests</th><td>87.5% · 77/88</td><td>88.6% · 78/88</td>
+      <td>Every fact decision matched expectations. This can hide low useful-fact recall.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Search found 19 of 22 needed facts: <b>86.4% retrieval recall</b>.
+  Release recall also counts the three search misses. Sharing excessive detail does not count as a correct release.</p>
+  <div class="eval-limit"><b>Compare honestly</b>
+  <p>This is the archived <code>need2know-eval-u46_uo94</code> run, not a live score for the current code.
+  It used <code>jev-latest</code>, local <code>minishlab/potion-base-8M</code> embeddings, and prepared
+  softer statements—not Sonnet generation or real MCP clients. One repeat does not establish stability;
+  a later reported run disclosed medication to counsel.</p>
+  <p>The parallel run took 27.21 seconds with four concurrent requests. Individual-request median and
+  p95 end-to-end latency were not measured. The original run captured neither a source commit nor an
+  immutable model revision.</p>
+  <p>Keep this baseline unchanged. If roles or expected answers are clarified, label that as a new
+  benchmark version and rerun the old and new judge on that same version before claiming improvement.</p></div>
+</section>
+<style>
+.baseline-table{overflow-x:auto;margin:24px 0}.baseline-table table{border-collapse:collapse;width:100%;min-width:760px;font-size:20px;text-align:left}
+.baseline-table caption{text-align:left;color:#506057;margin-bottom:16px}.baseline-table th,.baseline-table td{padding:16px 14px;border-bottom:1px solid #d8d3c9;vertical-align:top}
+.baseline-table thead{background:#edf4ef}.baseline-table tbody th{width:25%}.baseline-table td:nth-child(2),.baseline-table td:nth-child(3){white-space:nowrap;font-variant-numeric:tabular-nums}.baseline-table td:last-child{color:#506057}
+</style>
+"""
+
+
 @app.get("/", response_class=HTMLResponse)
 def demo() -> str:
     return TERMINAL_HTML.replace(
         "</main><style>",
-        f"{PROPOSAL_DEMO}{PROTOCOL_DOCS}{ADVERSARIAL_FLOW_DIAGRAM}{EVALUATION_DOCS}</main><style>",
+        f"{PROPOSAL_DEMO}{PROTOCOL_DOCS}{ADVERSARIAL_FLOW_DIAGRAM}{EVALUATION_DOCS}{BASELINE_DOCS}</main><style>",
         1,
     )
 

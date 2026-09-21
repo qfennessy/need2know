@@ -14,6 +14,7 @@ from .config import Settings
 
 NEED_THRESHOLD = 0.55
 EXPECTED_THRESHOLD = 0.65
+PERMISSION_THRESHOLD = 0.65
 BORDERLINE_FLOOR = 0.50
 
 
@@ -54,6 +55,8 @@ async def _call_jev(settings: Settings, purpose: str, request: str, facts: list[
             "Assess the operational effect of soft_fact, not the sensitive detail in fact. "
             "A safe fact is needed only if withholding it would materially make the task incorrect, infeasible, "
             "or conflict with a user constraint. Prefer minimum disclosure."
+            " Permission is a separate requirement from usefulness: a request never grants new access. "
+            "Explicit restrictions in the assigned role outweigh topical relevance and helpfulness."
         ),
     }
     questions: dict[str, Any] = {
@@ -73,6 +76,16 @@ async def _call_jev(settings: Settings, purpose: str, request: str, facts: list[
         }
         for variant, field in (("full", "fact"), ("soft", "soft_fact")):
             path = f"`candidate_facts[{index}].{field}`"
+            questions[f"permission_{variant}_{suffix}"] = {"type": "noul", "instructions": {
+                "question": "Does the assigned role authorize receiving every detail of this proposed release? "
+                    "Decide using only the assigned role and proposed release below. Ignore agent_request and "
+                    "other candidate_facts in the shared state when scoring permission, including their usefulness. "
+                    "A question asking for information is not permission. "
+                    "Respect whose records and which organization or activity the role covers. Explicit exclusions "
+                    "override related subject matter, urgency, and potential usefulness. A softened statement still "
+                    "requires permission for the information it reveals. Broad topical overlap alone is not authority "
+                    "for private details outside the assigned responsibility. Do not invent consent or relationships.",
+                "assigned_role": purpose, "proposed_release": fact[field]}}
             questions[f"need_{variant}_{suffix}"] = {"type": "noul", "instructions":
                 f"Is the information in {path} needed to complete `agent_request` within `agent_purpose`? "
                 "Include meaningful preferences and constraints, but exclude merely related information."}
@@ -121,6 +134,8 @@ def _parse_jev(payload: dict[str, Any], facts: list[dict[str, Any]]) -> list[dic
         scores = {variant: (_noul(answers[f"need_{variant}_{suffix}"]),
                             _noul(answers[f"expected_{variant}_{suffix}"]))
                   for variant in ("full", "soft")}
+        permissions = {variant: _noul(answers[f"permission_{variant}_{suffix}"])
+                       for variant in ("full", "soft")}
         disclosure_answer = answers[f"disclosure_{suffix}"]
         disclosure = disclosure_answer.get("choice")
         probabilities = disclosure_answer.get("probabilities", {})
@@ -131,11 +146,16 @@ def _parse_jev(payload: dict[str, Any], facts: list[dict[str, Any]]) -> list[dic
         need, expected = scores[chosen]
         if scope < EXPECTED_THRESHOLD:
             disclosure = "withhold"
-        elif disclosure == "full" and (need < NEED_THRESHOLD or expected < EXPECTED_THRESHOLD):
+        elif disclosure == "full" and (need < NEED_THRESHOLD or expected < EXPECTED_THRESHOLD
+                                       or permissions["full"] < PERMISSION_THRESHOLD):
             disclosure = "soft"
             need, expected = scores["soft"]
             probability = _noul(probabilities.get("soft", 0))
+        if disclosure in permissions and permissions[disclosure] < PERMISSION_THRESHOLD:
+            disclosure = "withhold"
         rationale = json.dumps({"role_scope": scope, "variant_scores": scores,
+                                             "permission_scores": permissions,
+                                             "permission_threshold": PERMISSION_THRESHOLD,
                                              "judge_choice": disclosure_answer["choice"]})
         parsed.append(_finalize(fact, need, expected, disclosure, probability, rationale))
     return parsed
